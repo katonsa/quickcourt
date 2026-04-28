@@ -20,7 +20,7 @@ Phase 1 must establish these access checks so later venue onboarding and managem
 - Helper to check admin role.
 - Helper to check organization membership.
 - Helper to check venue dashboard access.
-- Route guards/middleware for:
+- Route guards/proxy as needed for:
   - `/dashboard/*`
   - `/dashboard/venue/*`
   - `/admin/*`
@@ -62,6 +62,187 @@ P1-05 owns access helper and guard implementation. P1-08 owns the final shared b
 5. Add development/test seed organization membership if needed to test owner/staff access.
 6. Document future Milestone 2 integration points for owner invitation and staff permissions.
 
+## Implementation Slices
+
+P1-05 is split into implementation slices so access policy, route behavior, and verification can be reviewed independently. Do not mark P1-05 `Done` in `breakdown.md` until all acceptance criteria pass.
+
+### Slice 0 — Planning and Guard Strategy
+
+- Review this task spec, P1-04 auth helpers, Prisma `User`/`Organization`/`Member` models, and current route groups.
+- Read relevant local Next.js 16 docs before adding route guards or proxy behavior.
+- Use server-side layouts/helpers as the source of truth for authorization.
+- Treat `proxy.ts` as optional optimistic routing only; do not rely on it for database-backed authorization.
+- Note that Next.js 16 renamed `middleware.ts` to `proxy.ts`; do not add a new `middleware.ts`.
+
+Suggested commit: none unless intentional docs-only planning notes are added.
+
+### Slice 1 — Access Helper Consolidation
+
+- Add or consolidate access helpers in `lib/auth/access.ts`.
+- Provide reusable helpers:
+  - `requireUser()`
+  - `requireAdmin()`
+  - `getOrganizationMembershipsForUser(userId)`
+  - `requireAnyOrganizationMember()`
+  - `requireOrganizationOwner()` for later owner-only flows.
+- Preserve the access boundary:
+  - Super Admin access uses `User.role === "admin"` or the Better Auth Admin Plugin role field.
+  - Venue dashboard access uses Organization membership, not `User.role`.
+- Keep helper return values useful for later service/page code, including the current user and membership data where appropriate.
+
+Suggested commit:
+
+```text
+feat(auth): add reusable access helpers
+```
+
+### Slice 2 — Guard Response Helpers
+
+- Add `lib/auth/guards.ts` for route-level guard behavior shared by layouts and future pages.
+- Centralize unauthenticated behavior as redirect-to-sign-in.
+- Keep the sign-in path configurable or centralized because P1-06 owns the final auth UI route.
+- Centralize authenticated-but-insufficient-access behavior as forbidden.
+- Prefer stable route redirects such as `/forbidden` unless the project intentionally enables and adopts Next.js experimental auth interrupts.
+
+Suggested commit:
+
+```text
+feat(auth): add route guard response helpers
+```
+
+### Slice 3 — Minimal Protected Route Surfaces
+
+- Add minimal protected route placeholders if the route files do not already exist:
+  - `/dashboard`
+  - `/dashboard/venue`
+  - `/admin`
+- Keep these pages intentionally small so P1-06 can own final shell layout and UI polish.
+- Do not add auth forms, organization creation UI, owner invitation UI, or staff invitation UI.
+
+Suggested commit:
+
+```text
+feat(routes): add protected shell route placeholders
+```
+
+### Slice 4 — Server Layout Guards
+
+- Guard the user dashboard layout/route with authenticated user access.
+- Guard the admin route group with admin role access.
+- Guard the venue dashboard route or nested layout with Organization membership access.
+- Ensure `/dashboard/venue/*` checks `Member` records and does not infer venue access from `User.role`.
+- Keep the admin-with-membership edge case valid: admin access and venue membership access remain separate grants.
+
+Suggested commit:
+
+```text
+feat(auth): enforce dashboard route guards
+```
+
+### Slice 5 — Minimal Unauthorized and Forbidden Pages
+
+- Add minimal placeholder pages:
+  - `app/unauthorized/page.tsx`
+  - `app/forbidden/page.tsx`
+- Keep copy and layout basic; P1-06 owns final UI presentation.
+- Use these placeholders to make guard behavior testable in P1-05.
+- Trade-off accepted for P1-05:
+  - Benefit: route guard behavior can be verified now without waiting for P1-06.
+  - Cost: P1-06 may replace or restyle these pages later.
+
+Suggested commit:
+
+```text
+feat(auth): add access denial pages
+```
+
+### Slice 6 — Optional Proxy Optimistic Redirect
+
+- Add `proxy.ts` only if an early request-level session presence check is useful.
+- Match only protected paths:
+  - `/dashboard/:path*`
+  - `/admin/:path*`
+- Do not perform Prisma membership lookups or full authorization in proxy.
+- Keep final authorization inside server layouts/helpers so client navigation, Server Functions, and future service code are still protected.
+
+Suggested commit, only if proxy is added:
+
+```text
+feat(auth): add protected route proxy redirect
+```
+
+### Slice 7 — Development/Test Seed Support
+
+- Review the existing development/test seed organization membership before adding new seed data.
+- Add or adjust seed data only if needed to verify:
+  - admin access,
+  - regular authenticated user access,
+  - organization member venue access,
+  - non-member venue denial.
+- Do not raw-seed Better Auth password credentials.
+
+Suggested commit, only if seed data changes:
+
+```text
+chore(seed): support access guard verification users
+```
+
+### Slice 8 — Focused Tests
+
+- Add focused unit tests for access helper logic now, especially:
+  - unauthenticated user behavior,
+  - admin role behavior,
+  - regular user admin denial,
+  - organization member access,
+  - non-member venue denial,
+  - owner membership helper behavior.
+- Add route guard behavior tests where feasible with the current test harness.
+- Keep final cross-feature shared behavior coverage in P1-08.
+
+Suggested commit:
+
+```text
+test(auth): cover access helper behavior
+```
+
+### Slice 9 — Verification
+
+Run after relevant slices:
+
+```bash
+npm run typecheck
+npm run lint
+npm run test
+```
+
+Run final verification where environment access allows:
+
+```bash
+npm run db:migrate
+npm run db:verify-constraints
+npm run db:seed
+npm run typecheck
+npm run lint
+npm run test
+npm run build
+```
+
+### Slice 10 — Documentation and Status
+
+- Update this task doc with implementation notes if the final implementation differs from these slices.
+- Document Milestone 2 integration points:
+  - owner invitation should create Organization membership;
+  - staff invitation should create Organization membership plus future branch permissions;
+  - branch-level staff permissions should use `MemberBranchAccess`;
+  - venue onboarding should create or link the `Organization -> Venue` relationship.
+- Update `breakdown.md` only after acceptance criteria and verification pass.
+
+Suggested commit:
+
+```text
+docs(auth): document organization access guards
+```
+
 ## Files / Modules
 
 Likely touched:
@@ -69,13 +250,17 @@ Likely touched:
 ```text
 lib/auth/access.ts
 lib/auth/guards.ts
-middleware.ts
+proxy.ts
 app/(dashboard)/layout.tsx
-app/(venue-dashboard)/layout.tsx
+app/(dashboard)/dashboard/page.tsx
+app/(dashboard)/dashboard/venue/layout.tsx
+app/(dashboard)/dashboard/venue/page.tsx
 app/(admin)/layout.tsx
+app/(admin)/admin/page.tsx
 app/unauthorized/page.tsx
 app/forbidden/page.tsx
 prisma/seed.ts
+**/*.test.ts
 ```
 
 ## Access Rules
