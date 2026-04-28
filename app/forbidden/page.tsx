@@ -1,25 +1,16 @@
-import Link from "next/link"
-
-import { Button } from "@/components/ui/button"
+import { RouteState } from "@/components/layouts/route-state"
+import { DASHBOARD_PATH } from "@/lib/auth/paths"
 
 export default function ForbiddenPage() {
   return (
-    <main className="min-h-svh bg-background">
-      <section className="mx-auto flex min-h-svh w-full max-w-3xl flex-col justify-center gap-6 px-6 py-16">
-        <div className="space-y-3">
-          <h1 className="text-3xl font-semibold tracking-normal text-foreground">
-            Access denied
-          </h1>
-          <p className="max-w-xl text-base leading-7 text-muted-foreground">
-            Your account does not have permission to access this page.
-          </p>
-        </div>
-        <div>
-          <Button asChild>
-            <Link href="/dashboard">Go to dashboard</Link>
-          </Button>
-        </div>
-      </section>
-    </main>
+    <RouteState
+      eyebrow="Access unavailable"
+      title="This page cannot be opened"
+      description="The requested area is not available for the current session. No account or workspace details are shown here."
+      actions={[
+        { href: DASHBOARD_PATH, label: "Go to dashboard" },
+        { href: "/venues", label: "Browse venues", variant: "outline" },
+      ]}
+    />
   )
 }
