@@ -31,6 +31,10 @@ vi.mock("@/lib/db", () => ({
 import {
   AccessDeniedError,
   AuthenticationRequiredError,
+  getCurrentOrganizationMemberships,
+  getCurrentUser,
+  getOrganizationMembershipsForUser,
+  isAdminUser,
   requireAdmin,
   requireAnyOrganizationMember,
   requireOrganizationOwner,
@@ -68,6 +72,54 @@ describe("auth access helpers", () => {
     await expect(requireUser()).rejects.toBeInstanceOf(AuthenticationRequiredError)
   })
 
+  it("getCurrentUser returns the session user when authenticated", async () => {
+    const user = createUser({ id: "current-user" })
+    mocks.getSession.mockResolvedValue({ user })
+
+    await expect(getCurrentUser()).resolves.toBe(user)
+  })
+
+  it("getCurrentUser returns null when there is no session", async () => {
+    mocks.getSession.mockResolvedValue(null)
+
+    await expect(getCurrentUser()).resolves.toBeNull()
+  })
+
+  it("getCurrentOrganizationMemberships returns an empty list without querying members when unauthenticated", async () => {
+    mocks.getSession.mockResolvedValue(null)
+
+    await expect(getCurrentOrganizationMemberships()).resolves.toEqual([])
+    expect(mocks.findMany).not.toHaveBeenCalled()
+  })
+
+  it("getOrganizationMembershipsForUser queries memberships with organization venue and branch access", async () => {
+    const memberships = [createMembership({ userId: "user-memberships" })]
+    mocks.findMany.mockResolvedValue(memberships)
+
+    await expect(getOrganizationMembershipsForUser("user-memberships")).resolves.toBe(
+      memberships
+    )
+    expect(mocks.findMany).toHaveBeenCalledWith({
+      where: { userId: "user-memberships" },
+      include: {
+        organization: {
+          include: {
+            venue: true,
+          },
+        },
+        branchAccess: true,
+      },
+      orderBy: { createdAt: "asc" },
+    })
+  })
+
+  it("isAdminUser only accepts the admin role", () => {
+    expect(isAdminUser({ role: "admin" })).toBe(true)
+    expect(isAdminUser({ role: "user" })).toBe(false)
+    expect(isAdminUser({ role: null })).toBe(false)
+    expect(isAdminUser({})).toBe(false)
+  })
+
   it("requireAdmin accepts user.role admin", async () => {
     const adminUser = createUser({ role: "admin" })
     mocks.getSession.mockResolvedValue({ user: adminUser })
@@ -99,6 +151,32 @@ describe("auth access helpers", () => {
     })
   })
 
+  it("requireAnyOrganizationMember scoped by organizationId returns the matching membership", async () => {
+    const user = createUser({ id: "multi-org-user", role: "user" })
+    const otherMembership = createMembership({
+      id: "member-other",
+      organizationId: "org-other",
+      role: "member",
+      userId: user.id,
+    })
+    const matchingMembership = createMembership({
+      id: "member-matching",
+      organizationId: "org-matching",
+      role: "member",
+      userId: user.id,
+    })
+    mocks.getSession.mockResolvedValue({ user })
+    mocks.findMany.mockResolvedValue([otherMembership, matchingMembership])
+
+    await expect(
+      requireAnyOrganizationMember({ organizationId: "org-matching" })
+    ).resolves.toEqual({
+      user,
+      membership: matchingMembership,
+      memberships: [otherMembership, matchingMembership],
+    })
+  })
+
   it("requireAnyOrganizationMember rejects a user without memberships", async () => {
     mocks.getSession.mockResolvedValue({
       user: createUser({ id: "user-no-membership", role: "user" }),
@@ -106,6 +184,23 @@ describe("auth access helpers", () => {
     mocks.findMany.mockResolvedValue([])
 
     await expect(requireAnyOrganizationMember()).rejects.toBeInstanceOf(AccessDeniedError)
+  })
+
+  it("requireAnyOrganizationMember scoped by organizationId rejects memberships in other organizations", async () => {
+    const user = createUser({ id: "member-other-org", role: "user" })
+    mocks.getSession.mockResolvedValue({ user })
+    mocks.findMany.mockResolvedValue([
+      createMembership({
+        id: "member-other",
+        organizationId: "org-other",
+        role: "member",
+        userId: user.id,
+      }),
+    ])
+
+    await expect(
+      requireAnyOrganizationMember({ organizationId: "org-missing" })
+    ).rejects.toBeInstanceOf(AccessDeniedError)
   })
 
   it("requireOrganizationOwner accepts owner membership", async () => {
@@ -123,6 +218,45 @@ describe("auth access helpers", () => {
       user,
       membership,
       memberships: [membership],
+    })
+  })
+
+  it("requireOrganizationOwner rejects non-owner membership", async () => {
+    const user = createUser({ id: "staff-user", role: "user" })
+    mocks.getSession.mockResolvedValue({ user })
+    mocks.findMany.mockResolvedValue([
+      createMembership({
+        id: "staff-member",
+        organizationId: "org-staffed",
+        role: "member",
+        userId: user.id,
+      }),
+    ])
+
+    await expect(requireOrganizationOwner()).rejects.toBeInstanceOf(AccessDeniedError)
+  })
+
+  it("requireOrganizationOwner selects an owner membership from multiple memberships", async () => {
+    const user = createUser({ id: "multi-role-user", role: "user" })
+    const staffMembership = createMembership({
+      id: "staff-member",
+      organizationId: "org-staffed",
+      role: "member",
+      userId: user.id,
+    })
+    const ownerMembership = createMembership({
+      id: "owner-member",
+      organizationId: "org-owned",
+      role: "owner",
+      userId: user.id,
+    })
+    mocks.getSession.mockResolvedValue({ user })
+    mocks.findMany.mockResolvedValue([staffMembership, ownerMembership])
+
+    await expect(requireOrganizationOwner()).resolves.toEqual({
+      user,
+      membership: ownerMembership,
+      memberships: [staffMembership, ownerMembership],
     })
   })
 

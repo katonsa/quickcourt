@@ -103,6 +103,32 @@ describe("route guard response helpers", () => {
     expect(mocks.requireAdmin).toHaveBeenCalledTimes(1)
   })
 
+  it("requireAdminForRoute redirects authentication failures to sign in", async () => {
+    mocks.requireAdmin.mockRejectedValue(new AuthenticationRequiredError())
+
+    await expect(requireAdminForRoute()).rejects.toBeInstanceOf(TestRedirectError)
+    expect(mocks.redirect).toHaveBeenCalledWith(SIGN_IN_PATH)
+  })
+
+  it("requireAdminForRoute redirects access failures to forbidden", async () => {
+    mocks.requireAdmin.mockRejectedValue(new AccessDeniedError("Admin access required."))
+
+    await expect(requireAdminForRoute()).rejects.toBeInstanceOf(TestRedirectError)
+    expect(mocks.redirect).toHaveBeenCalledWith(FORBIDDEN_PATH)
+  })
+
+  it("requireAnyOrganizationMemberForRoute calls requireAnyOrganizationMember and returns the result", async () => {
+    const result = {
+      user: { id: "member-user" },
+      membership: { id: "member-1" },
+      memberships: [{ id: "member-1" }],
+    }
+    mocks.requireAnyOrganizationMember.mockResolvedValue(result)
+
+    await expect(requireAnyOrganizationMemberForRoute()).resolves.toBe(result)
+    expect(mocks.requireAnyOrganizationMember).toHaveBeenCalledWith(undefined)
+  })
+
   it("requireAnyOrganizationMemberForRoute redirects authentication failures", async () => {
     mocks.requireAnyOrganizationMember.mockRejectedValue(new AuthenticationRequiredError())
 
@@ -112,6 +138,17 @@ describe("route guard response helpers", () => {
     expect(mocks.redirect).toHaveBeenCalledWith(SIGN_IN_PATH)
   })
 
+  it("requireAnyOrganizationMemberForRoute redirects access failures to forbidden", async () => {
+    mocks.requireAnyOrganizationMember.mockRejectedValue(
+      new AccessDeniedError("Organization membership is required.")
+    )
+
+    await expect(requireAnyOrganizationMemberForRoute()).rejects.toBeInstanceOf(
+      TestRedirectError
+    )
+    expect(mocks.redirect).toHaveBeenCalledWith(FORBIDDEN_PATH)
+  })
+
   it("requireOrganizationOwnerForRoute passes options to the access helper", async () => {
     const options = { organizationId: "org-1" }
     const result = { user: { id: "owner-1" }, membership: { id: "member-1" } }
@@ -119,5 +156,16 @@ describe("route guard response helpers", () => {
 
     await expect(requireOrganizationOwnerForRoute(options)).resolves.toBe(result)
     expect(mocks.requireOrganizationOwner).toHaveBeenCalledWith(options)
+  })
+
+  it("requireOrganizationOwnerForRoute redirects access failures to forbidden", async () => {
+    mocks.requireOrganizationOwner.mockRejectedValue(
+      new AccessDeniedError("Organization owner access is required.")
+    )
+
+    await expect(requireOrganizationOwnerForRoute()).rejects.toBeInstanceOf(
+      TestRedirectError
+    )
+    expect(mocks.redirect).toHaveBeenCalledWith(FORBIDDEN_PATH)
   })
 })
