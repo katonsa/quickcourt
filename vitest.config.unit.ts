@@ -7,7 +7,12 @@ export default mergeConfig(
   defineConfig({
     test: {
       exclude: [...configDefaults.exclude, "**/*.integration.test.ts"],
-      include: ["**/*.test.ts", "**/*.spec.ts"],
+      include: [
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.spec.ts",
+        "**/*.spec.tsx",
+      ],
     },
   })
 )

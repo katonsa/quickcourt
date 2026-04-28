@@ -90,5 +90,6 @@ Before marking Phase 1 as `Done`, confirm:
 - P1-06 Slice 8 has turned `/dashboard/venue` into a protected venue workspace shell using Organization membership context, with placeholder navigation for future venue sections and no onboarding, invitation, booking, payment, finance, or staff management workflows.
 - P1-06 Slice 9 has turned `/admin` into a protected admin shell using admin role context, with placeholder navigation for future admin areas and no organization creation, venue approval, or operational workflows.
 - P1-06 Slice 10 has polished generic access denial pages plus auth, dashboard, and admin loading/error states without changing guard policy or exposing internal error details.
+- P1-06 Slice 11 has enabled TSX unit tests and added focused auth UI smoke coverage for stable auth shell and verification notice components. Broader browser/E2E auth coverage remains owned by P1-08.
 - P1-07 has completed the local Vitest, foundation env tests, and DB integration harness slices. CI workflow work is deferred, so P1-07 remains `In Progress` until CI is added and verified.
 - Testing harness work can start before all Phase 1 behavior exists, but Phase 1 behavior coverage cannot be marked `Done` until the auth, access, and shell tasks it covers are implemented.
