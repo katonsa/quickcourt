@@ -81,15 +81,15 @@ lib/*
 
 ## Acceptance Criteria
 
-- [ ] App runs locally with `npm run dev` or the selected package manager equivalent.
-- [ ] `npm run typecheck` passes.
-- [ ] `npm run lint` passes or is configured to run once linting rules are finalized.
-- [ ] TypeScript strict mode is active.
-- [ ] Path alias works.
-- [ ] Public placeholder route is available.
-- [ ] Base folder conventions are documented or obvious.
-- [ ] Project uses root `app` directory and does not introduce `/src`.
-- [ ] No auth, booking, payment, or venue onboarding feature is implemented.
+- [x] App runs locally with `npm run dev` or the selected package manager equivalent.
+- [x] `npm run typecheck` passes.
+- [x] `npm run lint` passes or is configured to run once linting rules are finalized.
+- [x] TypeScript strict mode is active.
+- [x] Path alias works.
+- [x] Public placeholder route is available.
+- [x] Base folder conventions are documented or obvious.
+- [x] Project uses root `app` directory and does not introduce `/src`.
+- [x] No auth, booking, payment, or venue onboarding feature is implemented.
 
 ## Test Plan
 
