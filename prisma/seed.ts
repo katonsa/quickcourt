@@ -9,9 +9,13 @@ const databaseUrl = readDatabaseUrl()
 const adapter = new PrismaPg({ connectionString: databaseUrl })
 const db = new PrismaClient({ adapter })
 
+const sampleAdminUserId = "seed_admin_user"
+const sampleRegularUserId = "seed_regular_user"
 const sampleOwnerUserId = "seed_venue_owner_user"
+const sampleStaffUserId = "seed_venue_staff_user"
 const sampleOrganizationId = "seed_quickcourt_demo_org"
-const sampleMemberId = "seed_quickcourt_demo_owner_member"
+const sampleOwnerMemberId = "seed_quickcourt_demo_owner_member"
+const sampleStaffMemberId = "seed_quickcourt_demo_staff_member"
 
 async function main(): Promise<void> {
   await seedPlatformSettings()
@@ -64,19 +68,33 @@ async function seedPlatformSettings(): Promise<void> {
 }
 
 async function seedDevelopmentOrganization(): Promise<void> {
-  await db.user.upsert({
-    where: { id: sampleOwnerUserId },
-    update: {
-      name: "Demo Venue Owner",
-      email: "owner.demo@quickcourt.test",
-      emailVerified: true,
-    },
-    create: {
-      id: sampleOwnerUserId,
-      name: "Demo Venue Owner",
-      email: "owner.demo@quickcourt.test",
-      emailVerified: true,
-    },
+  // Guard verification identities only. Do not raw-seed Better Auth passwords.
+  await seedUser({
+    id: sampleAdminUserId,
+    name: "Demo Admin",
+    email: "admin.demo@quickcourt.test",
+    role: "admin",
+  })
+
+  await seedUser({
+    id: sampleRegularUserId,
+    name: "Demo Regular User",
+    email: "user.demo@quickcourt.test",
+    role: "user",
+  })
+
+  await seedUser({
+    id: sampleOwnerUserId,
+    name: "Demo Venue Owner",
+    email: "owner.demo@quickcourt.test",
+    role: "user",
+  })
+
+  await seedUser({
+    id: sampleStaffUserId,
+    name: "Demo Venue Staff",
+    email: "staff.demo@quickcourt.test",
+    role: "user",
   })
 
   await db.organization.upsert({
@@ -96,18 +114,60 @@ async function seedDevelopmentOrganization(): Promise<void> {
   })
 
   await db.member.upsert({
-    where: { id: sampleMemberId },
+    where: { id: sampleOwnerMemberId },
     update: {
       organizationId: sampleOrganizationId,
       userId: sampleOwnerUserId,
       role: "owner",
     },
     create: {
-      id: sampleMemberId,
+      id: sampleOwnerMemberId,
       organizationId: sampleOrganizationId,
       userId: sampleOwnerUserId,
       role: "owner",
       createdAt: new Date(),
+    },
+  })
+
+  await db.member.upsert({
+    where: { id: sampleStaffMemberId },
+    update: {
+      organizationId: sampleOrganizationId,
+      userId: sampleStaffUserId,
+      role: "member",
+    },
+    create: {
+      id: sampleStaffMemberId,
+      organizationId: sampleOrganizationId,
+      userId: sampleStaffUserId,
+      role: "member",
+      createdAt: new Date(),
+    },
+  })
+}
+
+type SeedUserInput = {
+  id: string
+  name: string
+  email: string
+  role: "admin" | "user"
+}
+
+async function seedUser({ id, name, email, role }: SeedUserInput): Promise<void> {
+  await db.user.upsert({
+    where: { id },
+    update: {
+      name,
+      email,
+      emailVerified: true,
+      role,
+    },
+    create: {
+      id,
+      name,
+      email,
+      emailVerified: true,
+      role,
     },
   })
 }
