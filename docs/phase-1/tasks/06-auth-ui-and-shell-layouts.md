@@ -766,20 +766,20 @@ lib/validation/auth.ts
 
 ## Acceptance Criteria
 
-- [ ] Sign-up page exists and connects to auth flow.
-- [ ] Sign-in page exists and connects to auth flow.
-- [ ] `/register` and `/login` redirect aliases exist.
-- [ ] Forgot password page exists and triggers recovery flow.
-- [ ] Reset password page exists and handles reset token flow.
-- [ ] Change password entry point exists for authenticated user.
-- [ ] Email verification notice/status exists.
-- [ ] `/venues` public shell exists.
-- [ ] `/dashboard` user shell exists and is protected.
-- [ ] `/dashboard/bookings`, `/dashboard/profile`, and `/dashboard/support` protected placeholders exist.
-- [ ] `/dashboard/venue` venue shell exists and is protected by organization membership.
-- [ ] `/admin` admin shell exists and is protected by admin role.
-- [ ] Forbidden/unauthorized pages are user-safe.
-- [ ] No venue onboarding, booking, or payment UI is implemented.
+- [x] Sign-up page exists and connects to auth flow.
+- [x] Sign-in page exists and connects to auth flow.
+- [x] `/register` and `/login` redirect aliases exist.
+- [x] Forgot password page exists and triggers recovery flow.
+- [x] Reset password page exists and handles reset token flow.
+- [x] Change password entry point exists for authenticated user.
+- [x] Email verification notice/status exists.
+- [x] `/venues` public shell exists.
+- [x] `/dashboard` user shell exists and is protected.
+- [x] `/dashboard/bookings`, `/dashboard/profile`, and `/dashboard/support` protected placeholders exist.
+- [x] `/dashboard/venue` venue shell exists and is protected by organization membership.
+- [x] `/admin` admin shell exists and is protected by admin role.
+- [x] Forbidden/unauthorized pages are user-safe.
+- [x] No venue onboarding, booking, or payment UI is implemented.
 
 ## Test Plan
 
@@ -789,6 +789,15 @@ lib/validation/auth.ts
 - Route smoke tests if Playwright or equivalent is available.
 - Accessibility sanity check for form labels, buttons, and error messages.
 - Final shared page and shell smoke coverage is completed in P1-08.
+
+## Verification Notes
+
+- 2026-04-29: `npm run typecheck` passed.
+- 2026-04-29: `npm run lint` passed.
+- 2026-04-29: `npm run test` passed with 10 test files and 59 tests.
+- 2026-04-29: `npm run build` passed with network permission for `next/font/google`.
+- 2026-04-29: local route smoke against the running dev server on port 3000 returned 200 for `/sign-in`, `/venues`, `/unauthorized`, and `/forbidden`; unauthenticated `/dashboard`, `/dashboard/venue`, and `/admin` returned 307 redirects to canonical `/sign-in?redirectTo=...`.
+- Broader browser/E2E auth behavior coverage remains owned by P1-08.
 
 ## Edge Cases
 
