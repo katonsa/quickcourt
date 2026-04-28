@@ -35,8 +35,16 @@ describe("protected route layouts", () => {
 
   it("guards the admin route group with admin access", async () => {
     const children = "admin"
+    guardMocks.requireAdminForRoute.mockResolvedValue({
+      user: {
+        email: "admin@example.com",
+        name: "Admin User",
+      },
+    })
 
-    await expect(AdminGroupLayout({ children })).resolves.toBe(children)
+    const result = await AdminGroupLayout({ children })
+
+    expect(result.props.children).toBe(children)
     expect(guardMocks.requireAdminForRoute).toHaveBeenCalledTimes(1)
   })
 

@@ -88,5 +88,6 @@ Before marking Phase 1 as `Done`, confirm:
 - P1-06 Slice 6 has replaced the public placeholders with a shared marketplace shell in `app/page.tsx` and `app/venues/page.tsx` without moving public routes or implementing search/booking features.
 - P1-06 Slice 7 has turned `/dashboard` into a protected user dashboard shell with stable navigation, logout access, and placeholder routes for bookings, profile, settings, and support.
 - P1-06 Slice 8 has turned `/dashboard/venue` into a protected venue workspace shell using Organization membership context, with placeholder navigation for future venue sections and no onboarding, invitation, booking, payment, finance, or staff management workflows.
+- P1-06 Slice 9 has turned `/admin` into a protected admin shell using admin role context, with placeholder navigation for future admin areas and no organization creation, venue approval, or operational workflows.
 - P1-07 has completed the local Vitest, foundation env tests, and DB integration harness slices. CI workflow work is deferred, so P1-07 remains `In Progress` until CI is added and verified.
 - Testing harness work can start before all Phase 1 behavior exists, but Phase 1 behavior coverage cannot be marked `Done` until the auth, access, and shell tasks it covers are implemented.

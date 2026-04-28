@@ -1,3 +1,4 @@
+import { AdminShell } from "@/components/layouts/admin-shell"
 import { requireAdminForRoute } from "@/lib/auth/guards"
 
 export default async function AdminGroupLayout({
@@ -5,7 +6,11 @@ export default async function AdminGroupLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  await requireAdminForRoute()
+  const access = await requireAdminForRoute()
 
-  return children
+  return (
+    <AdminShell user={{ email: access.user.email, name: access.user.name }}>
+      {children}
+    </AdminShell>
+  )
 }
