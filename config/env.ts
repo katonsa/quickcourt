@@ -74,6 +74,7 @@ const rawEnvSchema = z
       .trim()
       .min(32, "must be at least 32 characters"),
     BETTER_AUTH_URL: urlSchema,
+    ADMIN_BOOTSTRAP_EMAIL: optionalNonEmptyString.pipe(z.email().optional()),
     EMAIL_PROVIDER: z.enum(["console", "resend"]).optional(),
     EMAIL_FROM: optionalNonEmptyString,
     RESEND_API_KEY: optionalNonEmptyString,
@@ -128,6 +129,7 @@ const rawEnvSchema = z
       DATABASE_URL_TEST: input.DATABASE_URL_TEST,
       BETTER_AUTH_SECRET: input.BETTER_AUTH_SECRET,
       BETTER_AUTH_URL: input.BETTER_AUTH_URL,
+      ADMIN_BOOTSTRAP_EMAIL: input.ADMIN_BOOTSTRAP_EMAIL,
       EMAIL_PROVIDER: emailProvider,
       EMAIL_FROM: input.EMAIL_FROM,
       RESEND_API_KEY: input.RESEND_API_KEY,

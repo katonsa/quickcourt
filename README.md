@@ -117,6 +117,7 @@ Development and test may use `EMAIL_PROVIDER=console` without Resend credentials
 Optional local/test env:
 
 - `DATABASE_URL_TEST`
+- `ADMIN_BOOTSTRAP_EMAIL`
 
 ## Database
 
@@ -144,6 +145,14 @@ npm run db:smoke
 `DATABASE_URL` is the active app and Prisma database URL. `DATABASE_URL_TEST` is optional and reserved as the canonical test database URL for the Phase 1 test harness; when present, it must not point at the same database as `DATABASE_URL`.
 
 P1-03 seeds platform settings in all environments and sample organization/member data only in development or test. It does not seed Better Auth password credentials; create the first admin user through Better Auth, then promote that user to `role = "admin"` through an auth-aware bootstrap step.
+
+Admin bootstrap:
+
+1. Create the user through Better Auth email/password registration.
+2. Set `ADMIN_BOOTSTRAP_EMAIL` to that user email.
+3. Run `npm run auth:bootstrap-admin`.
+
+The bootstrap command is idempotent and only promotes an existing Better Auth user to `User.role = "admin"`. It does not create users or credentials.
 
 Migration structure:
 

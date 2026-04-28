@@ -18,7 +18,7 @@
 | P1-01 | App Foundation                             |       P0 | Done   | -                          | [01-app-foundation.md](./tasks/01-app-foundation.md)                                                   | Next.js app, strict TypeScript, base structure, package scripts, UI baseline                       | Typecheck, lint smoke                     |
 | P1-02 | Env, Config, Observability, Error Handling |       P0 | Done   | P1-01                      | [02-env-config-observability-error-handling.md](./tasks/02-env-config-observability-error-handling.md) | Env validation, logging, error boundaries, safe config loading                                     | Typecheck, lint, build, smoke checks      |
 | P1-03 | Database, Prisma, Migration Foundation     |       P0 | Done   | P1-01, P1-02               | [03-database-prisma-migration-foundation.md](./tasks/03-database-prisma-migration-foundation.md)       | PostgreSQL + Prisma ready, schema applied, constraints verified, migration discipline documented   | Migration verification, DB smoke test     |
-| P1-04 | Auth & Account Foundation                  |       P0 | Todo   | P1-02, P1-03               | [04-auth-account-foundation.md](./tasks/04-auth-account-foundation.md)                                 | Better Auth email/password, admin plugin, org plugin, account recovery, Resend fallback, rateLimit | Auth config smoke, P1-08 behavior tests   |
+| P1-04 | Auth & Account Foundation                  |       P0 | Done   | P1-02, P1-03               | [04-auth-account-foundation.md](./tasks/04-auth-account-foundation.md)                                 | Better Auth email/password, admin plugin, org plugin, account recovery, Resend fallback, rateLimit | Auth config smoke, P1-08 behavior tests   |
 | P1-05 | Organization Access & Route Guards         |       P0 | Todo   | P1-04                      | [05-organization-access-route-guards.md](./tasks/05-organization-access-route-guards.md)               | Access helpers and route guards for user, venue org member, and admin                              | Access helper tests, guard behavior tests |
 | P1-06 | Auth UI & Shell Layouts                    |       P0 | Todo   | P1-04, P1-05               | [06-auth-ui-and-shell-layouts.md](./tasks/06-auth-ui-and-shell-layouts.md)                             | Auth pages, dashboard shells, forbidden/unauthorized/error UI                                      | Component/page smoke tests where feasible |
 | P1-07 | Testing & CI Harness                       |       P0 | Todo   | P1-01, P1-02, P1-03        | [07-testing-ci-foundation.md](./tasks/07-testing-ci-foundation.md)                                     | Vitest, test DB conventions, CI pipeline, test scripts                                             | CI passes typecheck/lint/test             |
@@ -66,8 +66,8 @@ Before marking Phase 1 as `Done`, confirm:
 - [x] Production-required env vars fail fast when missing.
 - [x] Development-only fallbacks are impossible to accidentally use in production.
 - [x] Database constraints are applied and verifiable.
-- [ ] Auth endpoints use Better Auth rate limiting.
-- [ ] Resend is behind an email sender abstraction.
+- [x] Auth endpoints use Better Auth rate limiting.
+- [x] Resend is behind an email sender abstraction.
 - [ ] Organization access checks use membership, not `User.role`.
 - [ ] Admin access uses `User.role === "admin"` or equivalent Better Auth Admin Plugin role field.
 - [ ] Tests and CI pass.

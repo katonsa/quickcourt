@@ -94,6 +94,11 @@ Suggested commit: none unless intentional docs-only planning notes are added.
 - Update `config/env.ts` validation.
 - Keep secrets server-only and do not expose non-`NEXT_PUBLIC_*` values through client config.
 
+Implementation note:
+
+- Installed `better-auth` and `resend`. The installed Better Auth package exports `better-auth/adapters/prisma`, so no separate Prisma adapter package is required.
+- Added optional `ADMIN_BOOTSTRAP_EMAIL` for the promotion-only admin bootstrap script.
+
 Suggested commit:
 
 ```text
@@ -107,6 +112,12 @@ feat(auth): add auth dependencies and env foundation
 - Add Resend sender for staging/production.
 - Ensure production fails fast when Resend config is missing.
 - Do not log verification/reset links in production.
+
+Implementation note:
+
+- `lib/email/email-sender.ts` selects Resend or console based on validated server env.
+- Console sender prints auth links only when `APP_ENV=development`; test logs do not include links and hosted environments cannot select the console sender.
+- Resend sender uses minimal plain text and HTML templates from `lib/email/templates/`.
 
 Suggested commit:
 
@@ -122,6 +133,12 @@ feat(email): add transactional email sender abstraction
 - Add server-side auth module(s).
 - Do not add route guards, auth UI pages, or dashboard protection here; those belong to later tasks.
 
+Implementation note:
+
+- `lib/auth.ts` configures email/password, email verification, password reset, change-password endpoint support, Prisma adapter wiring through `lib/db.ts`, Better Auth Admin Plugin, Better Auth Organization Plugin, and built-in `rateLimit`.
+- Organization self-service creation is disabled for ordinary users to preserve the Phase 1 access model.
+- Rate limiting is enabled for hosted environments and remains off for local development/test unless the environment is hosted.
+
 Suggested commit:
 
 ```text
@@ -134,6 +151,10 @@ feat(auth): configure Better Auth core
 - Follow Next.js 16 App Router route handler conventions from local docs.
 - Keep route handler implementation server-only.
 - Verify the route path matches Better Auth client/server expectations.
+
+Implementation note:
+
+- Auth is mounted at `app/api/auth/[...all]/route.ts` using `toNextJsHandler(auth)` with Node.js runtime.
 
 Suggested commit:
 
@@ -165,6 +186,11 @@ feat(auth): enable admin and organization plugins
 - Recommended env name: `ADMIN_BOOTSTRAP_EMAIL`.
 - Do not raw-seed Better Auth password credentials.
 
+Implementation note:
+
+- `npm run auth:bootstrap-admin` promotes an existing Better Auth user identified by `ADMIN_BOOTSTRAP_EMAIL`.
+- The script does not create users, accounts, sessions, or password credentials.
+
 Suggested commit:
 
 ```text
@@ -179,6 +205,10 @@ feat(auth): add admin bootstrap support
   - identify admin role;
   - expose organization membership/session shape if available.
 - Keep authorization policy minimal. Full route guards belong to P1-05.
+
+Implementation note:
+
+- `lib/auth/require-user.ts` exposes `getCurrentSession`, `getCurrentUser`, `requireAuthenticatedUser`, `isAdminUser`, and membership loading for later P1-05 route guard work.
 
 Suggested commit:
 
@@ -247,19 +277,43 @@ package.json
 
 ## Acceptance Criteria
 
-- [ ] User can register with email/password.
-- [ ] User can login with email/password.
-- [ ] User can logout.
-- [ ] User can trigger email verification flow.
-- [ ] User can trigger forgot/reset password flow.
-- [ ] User can change password while authenticated.
-- [ ] Better Auth Admin Plugin is configured.
-- [ ] Better Auth Organization Plugin is configured.
-- [ ] Better Auth rate limiting is configured for auth endpoints.
-- [ ] Resend sender exists behind an abstraction.
-- [ ] Development console fallback logs auth links only in development.
-- [ ] Production fails fast without required Resend env variables.
-- [ ] No custom app-level rate limiter is implemented for auth.
+- [x] User can register with email/password.
+- [x] User can login with email/password.
+- [x] User can logout.
+- [x] User can trigger email verification flow.
+- [x] User can trigger forgot/reset password flow.
+- [x] User can change password while authenticated.
+- [x] Better Auth Admin Plugin is configured.
+- [x] Better Auth Organization Plugin is configured.
+- [x] Better Auth rate limiting is configured for auth endpoints.
+- [x] Resend sender exists behind an abstraction.
+- [x] Development console fallback logs auth links only in development.
+- [x] Production fails fast without required Resend env variables.
+- [x] No custom app-level rate limiter is implemented for auth.
+
+## Verification Results
+
+Completed on 2026-04-28:
+
+- `npm run db:migrate` — pass, schema already in sync.
+- `npm run db:verify-constraints` — pass.
+- `npm run db:seed` — pass.
+- `npm run db:smoke` — pass.
+- `npm run typecheck` — pass.
+- `npm run lint` — pass.
+- `npm run test` — pass placeholder (`No tests configured yet`).
+- `npm run build` — pass.
+- Local Better Auth HTTP smoke against the running dev server — pass:
+  - `GET /api/auth/ok`
+  - email/password sign-up
+  - email verification
+  - email/password sign-in
+  - authenticated change password
+  - forgot/reset password
+  - forgot-password privacy response for a missing email
+  - logout
+
+Disposable auth smoke user data was removed after verification.
 
 ## Test Plan
 
