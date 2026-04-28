@@ -516,17 +516,14 @@ services:
     "test:coverage": "vitest run --config vitest.config.unit.ts --coverage",
     "test:integration": "vitest run --config vitest.config.integration.ts",
     "test:all": "npm run test && npm run test:integration",
-    "test:ui": "vitest --config vitest.config.unit.ts --ui",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:db:up": "docker compose -f docker-compose.test.yml up -d",
+    "test:db:up": "docker compose -f docker-compose.test.yml up -d postgres-test",
     "test:db:down": "docker compose -f docker-compose.test.yml down",
-    "test:db:migrate": "DATABASE_URL=$DATABASE_URL_TEST npm run db:migrate:deploy"
+    "test:db:migrate": "tsx scripts/test-db-migrate.ts"
   },
 }
 ```
 
-`test`, `test:watch`, dan `test:coverage` memakai unit config. `test:db:migrate` menyiapkan schema test DB dengan mapping subprocess-local dari `DATABASE_URL` ke `DATABASE_URL_TEST`. `test:integration` memakai integration config, hanya memilih `*.integration.test.ts`, dan harus gagal jelas jika `DATABASE_URL_TEST` belum tersedia.
+`test`, `test:watch`, dan `test:coverage` memakai unit config. `test:db:migrate` menyiapkan schema test DB dengan mapping subprocess-local dari `DATABASE_URL` ke `DATABASE_URL_TEST`. `test:integration` memakai integration config, hanya memilih `*.integration.test.ts`, dan harus gagal jelas jika `DATABASE_URL_TEST` belum tersedia. `test:all` menjalankan unit tests lalu integration tests; migration tetap dijalankan eksplisit lewat `test:db:migrate`.
 
 ---
 

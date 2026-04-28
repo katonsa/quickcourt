@@ -66,7 +66,25 @@ npm run test:coverage
 
 Run the Slice 1 Vitest unit harness with V8 coverage.
 
-Later P1-07 slices add `npm run test:db:migrate` for test DB migration, `npm run test:integration` for DB-backed integration harness tests against `DATABASE_URL_TEST`, and `npm run test:all` for unit and DB integration tests together. Slice 1 uses `vitest.config.ts` for shared settings and `vitest.config.unit.ts` for unit tests; DB integration tests will use `vitest.config.integration.ts`.
+```bash
+npm run test:db:up
+npm run test:db:migrate
+npm run test:integration
+```
+
+Start the test PostgreSQL service, apply migrations to `DATABASE_URL_TEST`, then run DB-backed integration tests through `vitest.config.integration.ts`. `test:db:migrate` maps Prisma's active `DATABASE_URL` to `DATABASE_URL_TEST` only for that subprocess.
+
+```bash
+npm run test:db:down
+```
+
+Stop the test PostgreSQL service.
+
+```bash
+npm run test:all
+```
+
+Run unit tests and DB integration tests. `npm run test` remains unit-only and DB-free.
 
 ### Database Commands
 
@@ -145,6 +163,15 @@ Local PostgreSQL defaults:
 - User/password: `postgres` / `postgres`
 - Port: `5432`
 
+Local test PostgreSQL defaults:
+
+- Docker service: `postgres-test`
+- Image: `postgres:17-alpine`
+- Database: `quickcourt_test`
+- User/password: `postgres` / `postgres`
+- Port: `5433`
+- `DATABASE_URL_TEST`: `postgresql://postgres:postgres@localhost:5433/quickcourt_test`
+
 Local workflow:
 
 ```bash
@@ -156,7 +183,7 @@ npm run db:seed
 npm run db:smoke
 ```
 
-`DATABASE_URL` is the active app and Prisma database URL. `DATABASE_URL_TEST` is the canonical DB integration test URL for the Phase 1 test harness and must not point at the same database as `DATABASE_URL`. P1-07 keeps unit tests DB-free; DB-backed tests use `*.integration.test.ts` and run through `npm run test:integration`.
+`DATABASE_URL` is the active app and Prisma database URL. `DATABASE_URL_TEST` is the canonical DB integration test URL for the Phase 1 test harness and must not point at the same database as `DATABASE_URL`. P1-07 keeps unit tests DB-free; DB-backed tests use `*.integration.test.ts` and run through `npm run test:integration`. Prepare the test database with `npm run test:db:migrate` before running DB integration tests.
 
 P1-03 seeds platform settings in all environments and sample organization/member data only in development or test. It does not seed Better Auth password credentials; create the first admin user through Better Auth, then promote that user to `role = "admin"` through an auth-aware bootstrap step.
 

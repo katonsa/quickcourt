@@ -21,7 +21,12 @@
     "auth:bootstrap-admin": "tsx scripts/bootstrap-admin.ts",
     "test": "vitest run --config vitest.config.unit.ts",
     "test:watch": "vitest --config vitest.config.unit.ts",
-    "test:coverage": "vitest run --coverage --config vitest.config.unit.ts"
+    "test:coverage": "vitest run --coverage --config vitest.config.unit.ts",
+    "test:db:up": "docker compose -f docker-compose.test.yml up -d postgres-test",
+    "test:db:down": "docker compose -f docker-compose.test.yml down",
+    "test:db:migrate": "tsx scripts/test-db-migrate.ts",
+    "test:integration": "vitest run --config vitest.config.integration.ts",
+    "test:all": "npm run test && npm run test:integration"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
