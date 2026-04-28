@@ -30,6 +30,10 @@ const appEnvSchema = z.enum(appEnvValues)
 type NodeEnv = "development" | "test" | "production"
 type EmailProvider = "console" | "resend"
 
+const logLevelSchema = z
+  .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
+  .default("info")
+
 const urlSchema = z
   .string()
   .trim()
@@ -52,6 +56,7 @@ const rawEnvSchema = z
     NODE_ENV: nodeEnvSchema,
     APP_ENV: appEnvSchema.optional(),
     APP_URL: urlSchema,
+    LOG_LEVEL: logLevelSchema,
     DATABASE_URL: z.string().trim().min(1, "is required"),
     BETTER_AUTH_SECRET: z
       .string()
@@ -96,6 +101,7 @@ const rawEnvSchema = z
       APP_ENV: appEnv,
       NODE_ENV: input.NODE_ENV,
       APP_URL: input.APP_URL,
+      LOG_LEVEL: input.LOG_LEVEL,
       DATABASE_URL: input.DATABASE_URL,
       BETTER_AUTH_SECRET: input.BETTER_AUTH_SECRET,
       BETTER_AUTH_URL: input.BETTER_AUTH_URL,
