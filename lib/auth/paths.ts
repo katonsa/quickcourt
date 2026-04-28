@@ -1,7 +1,13 @@
 export const SIGN_IN_PATH = "/sign-in"
 export const SIGN_UP_PATH = "/sign-up"
+export const VERIFY_EMAIL_PATH = "/verify-email"
+export const DEFAULT_SIGN_IN_REDIRECT_PATH = "/dashboard"
 export const FORBIDDEN_PATH = "/forbidden"
 export const SIGN_IN_REDIRECT_PARAM = "redirectTo"
+export const EMAIL_VERIFICATION_SENT_PATH = `${VERIFY_EMAIL_PATH}?status=sent`
+export const EMAIL_VERIFICATION_CALLBACK_PATH = `${VERIFY_EMAIL_PATH}?status=verified`
+
+const REDIRECT_SANITIZER_BASE_URL = "http://quickcourt.invalid"
 
 export function sanitizeSignInRedirectTo(
   redirectTo: string | string[] | undefined
@@ -13,9 +19,9 @@ export function sanitizeSignInRedirectTo(
   }
 
   try {
-    const url = new URL(value, "http://quickcourt.local")
+    const url = new URL(value, REDIRECT_SANITIZER_BASE_URL)
 
-    if (url.origin !== "http://quickcourt.local") {
+    if (url.origin !== REDIRECT_SANITIZER_BASE_URL) {
       return null
     }
 

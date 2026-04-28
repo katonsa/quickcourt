@@ -1,0 +1,19 @@
+export function getGenericSignInErrorMessage(error: unknown) {
+  if (hasErrorCode(error, "EMAIL_NOT_VERIFIED")) {
+    return "Verify your email before signing in. If the account exists, a fresh verification email has been sent."
+  }
+
+  return "We could not sign you in with those details. Check your email and password, then try again."
+}
+
+export function getGenericSignUpErrorMessage() {
+  return "We could not create the account. Check the details and try again."
+}
+
+function hasErrorCode(error: unknown, code: string) {
+  if (!error || typeof error !== "object") {
+    return false
+  }
+
+  return "code" in error && error.code === code
+}
