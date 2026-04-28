@@ -30,6 +30,8 @@
 
 ### Konvensi Route MVP
 
+- **Auth UI:** `/sign-in`, `/sign-up`, `/forgot-password`, `/reset-password`, `/verify-email`
+- **Auth aliases:** `/login` redirects to `/sign-in`, `/register` redirects to `/sign-up`
 - **Marketplace publik:** `/venues`, `/venues/[venueSlug]`
 - **Dashboard pengguna:** `/dashboard`, `/dashboard/bookings`, `/dashboard/profile`, `/dashboard/settings`, `/dashboard/support`
 - **Venue management:** `/dashboard/venue`, `/dashboard/venue/bookings`, `/dashboard/venue/staff`, `/dashboard/venue/finance`, `/dashboard/venue/*`
