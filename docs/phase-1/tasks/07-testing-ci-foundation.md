@@ -63,12 +63,14 @@ Can be partially started after P1-01 and completed after P1-03.
 10. Add a required DB integration harness convention and minimal DB smoke test.
 11. Keep migration/constraint verification command documented.
 12. Add CI workflow:
-   - install dependencies
-   - typecheck
-   - lint
-   - unit test
-   - DB integration harness test with PostgreSQL service
-   - optional build
+
+- install dependencies
+- typecheck
+- lint
+- unit test
+- DB integration harness test with PostgreSQL service
+- optional build
+
 13. Document local test commands.
 14. Document that auth, email sender, access helper, guard, and shell behavior tests are completed in P1-08.
 
@@ -171,8 +173,16 @@ ci: add foundation validation workflow
 Suggested commit:
 
 ```text
-docs: mark testing CI foundation complete
+docs: document testing harness status
 ```
+
+Current status:
+
+- Slice 1 Vitest harness is complete.
+- Slice 2 foundation env tests are complete.
+- Slice 3 DB integration harness is complete.
+- Slice 4 CI workflow is deferred, so P1-07 must not be marked `Done` yet.
+- Slice 5 documentation reflects the completed local harness and the deferred CI status.
 
 ## Boundary With P1-08
 
@@ -250,27 +260,27 @@ docs/testing-strategy.md
 
 ## Acceptance Criteria
 
-- [ ] `npm run test` runs Vitest.
-- [ ] `npm run test:watch` runs Vitest watch mode.
-- [ ] `npm run test:coverage` runs Vitest coverage.
-- [ ] Shared Vitest settings live in `vitest.config.ts`.
-- [ ] Unit tests use `vitest.config.unit.ts`.
-- [ ] DB integration tests use `vitest.config.integration.ts`.
-- [ ] `npm run test` and `npm run test:coverage` exclude integration tests.
-- [ ] `npm run test:db:migrate` applies migrations to `DATABASE_URL_TEST`.
-- [ ] `npm run test:integration` runs DB-backed integration tests.
-- [ ] `npm run test:all` runs unit tests and integration tests.
+- [x] `npm run test` runs Vitest.
+- [x] `npm run test:watch` runs Vitest watch mode.
+- [x] `npm run test:coverage` runs Vitest coverage.
+- [x] Shared Vitest settings live in `vitest.config.ts`.
+- [x] Unit tests use `vitest.config.unit.ts`.
+- [x] DB integration tests use `vitest.config.integration.ts`.
+- [x] `npm run test` and `npm run test:coverage` exclude integration tests.
+- [x] `npm run test:db:migrate` applies migrations to `DATABASE_URL_TEST`.
+- [x] `npm run test:integration` runs DB-backed integration tests.
+- [x] `npm run test:all` runs unit tests and integration tests.
 - [ ] `npm run typecheck` runs in CI.
 - [ ] `npm run lint` runs in CI.
 - [ ] DB integration harness runs in CI with a PostgreSQL service.
-- [ ] Env validation tests exist.
-- [ ] Basic example tests prove the harness works.
-- [ ] Test DB convention is documented.
-- [ ] Minimal DB integration smoke test exists and uses `DATABASE_URL_TEST`.
-- [ ] Migration/constraint verification command is documented.
+- [x] Env validation tests exist.
+- [x] Basic example tests prove the harness works.
+- [x] Test DB convention is documented.
+- [x] Minimal DB integration smoke test exists and uses `DATABASE_URL_TEST`.
+- [x] Migration/constraint verification command is documented.
 - [ ] CI workflow is documented and committed.
-- [ ] Phase 1 docs explain how to run tests locally.
-- [ ] P1-08 behavior coverage dependency is documented.
+- [x] Phase 1 docs explain how to run tests locally.
+- [x] P1-08 behavior coverage dependency is documented.
 
 ## Test Plan
 
@@ -280,38 +290,44 @@ This task is the test plan foundation. Verify by running:
 npm run typecheck
 npm run lint
 npm run test
-npm run test:integration
-npm run build
+npm run test:coverage
 ```
 
 Prepare and verify the test database before running DB integration tests:
 
 ```text
 npm run db:generate
+npm run test:db:up
 npm run test:db:migrate
 DATABASE_URL=$DATABASE_URL_TEST npm run db:verify-constraints
 npm run test:integration
+npm run test:all
 ```
+
+`npm run build` is optional for P1-07 local verification because `next/font/google` requires network access during build. Run it separately when build verification is needed.
 
 ## Verification Results
 
-Fill this section when implementation is complete:
+Verified after Slice 3 and Slice 5 local harness work:
 
 ```text
-npm run typecheck
-npm run lint
-npm run test
-npm run test:integration
+npm run test                    # passed
+npm run test:coverage           # passed
+npm run typecheck               # passed
+npm run lint                    # passed
+DATABASE_URL_TEST=postgresql://postgres:postgres@localhost:5433/quickcourt_test npm run test:db:migrate      # passed
+DATABASE_URL_TEST=postgresql://postgres:postgres@localhost:5433/quickcourt_test npm run test:integration     # passed
+DATABASE_URL_TEST=postgresql://postgres:postgres@localhost:5433/quickcourt_test npm run test:all             # passed
 ```
 
 Conditional verification:
 
 ```text
-npm run build
-npm run db:generate
-npm run test:db:migrate
-DATABASE_URL=$DATABASE_URL_TEST npm run db:verify-constraints
+npm run build                                      # not run; requires network for next/font/google
+DATABASE_URL=postgresql://postgres:postgres@localhost:5433/quickcourt_test npm run db:verify-constraints    # passed
 ```
+
+CI workflow verification is deferred with Slice 4.
 
 ## Edge Cases
 
@@ -320,12 +336,13 @@ DATABASE_URL=$DATABASE_URL_TEST npm run db:verify-constraints
 - Environment variables in CI must not use production secrets.
 - P1-03 reserves `DATABASE_URL_TEST` for the DB integration test harness. Do not configure it to the same database as `DATABASE_URL`.
 - This task can be `Done` before auth/access/page behavior exists, as long as P1-08 remains open for that coverage.
+- Slice 4 CI workflow is deferred, so the task remains open even though the local harness slices are complete.
 
 ## Risks
 
 - Pulling behavior tests that depend on P1-04/P1-05/P1-06 into the harness task too early.
 - Making DB tests flaky due to shared state.
-- Skipping CI until later, causing early regressions.
+- Deferring CI until later, causing early regressions if local verification is not run consistently.
 
 ## Done When
 

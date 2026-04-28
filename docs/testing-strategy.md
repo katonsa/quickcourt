@@ -361,7 +361,7 @@ export default mergeConfig(
         exclude: ["test/**", "**/*.d.ts", "**/*.integration.test.ts"],
       },
     },
-  }),
+  })
 )
 ```
 
@@ -379,7 +379,7 @@ export default mergeConfig(
       testTimeout: 15_000,
       hookTimeout: 15_000,
     },
-  }),
+  })
 )
 ```
 
@@ -518,7 +518,7 @@ services:
     "test:all": "npm run test && npm run test:integration",
     "test:db:up": "docker compose -f docker-compose.test.yml up -d postgres-test",
     "test:db:down": "docker compose -f docker-compose.test.yml down",
-    "test:db:migrate": "tsx scripts/test-db-migrate.ts"
+    "test:db:migrate": "tsx scripts/test-db-migrate.ts",
   },
 }
 ```
@@ -729,17 +729,17 @@ Dengan TDD, test tidak diperlakukan sebagai pekerjaan terpisah dari implementasi
 
 ### Per-Milestone Test Summary
 
-| Milestone                                                   | Test yang Ditulis (TDD)                                                                   |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Milestone                                                   | Test yang Ditulis (TDD)                                                                                                                   |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | **Milestone 1 — Foundation**                                | Setup Vitest, unit-only default test command, required DB integration harness, CI foundation, env validation, auth config, access helpers |
-| **Milestone 2 — Organization & Venue Profile Onboarding**   | TDD: org invite/accept, venue profile draft, permission, bank masking/verification        |
-| **Milestone 3 — Court, Schedule, Pricing & Venue Approval** | TDD: court CRUD, slot calculator, price calculator, operating hours, approval lifecycle   |
-| **Milestone 4 — Marketplace & Booking Core**                | TDD: booking creation, anti double-booking, state machine, cancellation policy snapshot   |
-| **Milestone 5 — Payment, Webhook & Transaction Posting**    | TDD: payment retry, webhook idempotency, expiry sweep, minimal ledger posting             |
-| **Milestone 6 — Venue Operations & Staff**                  | TDD: manual booking, check-in, staff permissions, booking auto-complete                   |
-| **Milestone 7 — Finance, Refund, Withdrawal & Admin Ops**   | TDD: ledger accuracy, balance calculation, refund, withdrawal, adjustment, reconciliation |
-| **Milestone 8 — Notification Workflows**                    | TDD: email trigger conditions, reminder cron, template rendering, notification logging    |
-| **Milestone 9 — Hardening, E2E & Release Readiness**        | E2E test, race condition test, duplicate webhook, cron idempotency, release gates         |
+| **Milestone 2 — Organization & Venue Profile Onboarding**   | TDD: org invite/accept, venue profile draft, permission, bank masking/verification                                                        |
+| **Milestone 3 — Court, Schedule, Pricing & Venue Approval** | TDD: court CRUD, slot calculator, price calculator, operating hours, approval lifecycle                                                   |
+| **Milestone 4 — Marketplace & Booking Core**                | TDD: booking creation, anti double-booking, state machine, cancellation policy snapshot                                                   |
+| **Milestone 5 — Payment, Webhook & Transaction Posting**    | TDD: payment retry, webhook idempotency, expiry sweep, minimal ledger posting                                                             |
+| **Milestone 6 — Venue Operations & Staff**                  | TDD: manual booking, check-in, staff permissions, booking auto-complete                                                                   |
+| **Milestone 7 — Finance, Refund, Withdrawal & Admin Ops**   | TDD: ledger accuracy, balance calculation, refund, withdrawal, adjustment, reconciliation                                                 |
+| **Milestone 8 — Notification Workflows**                    | TDD: email trigger conditions, reminder cron, template rendering, notification logging                                                    |
+| **Milestone 9 — Hardening, E2E & Release Readiness**        | E2E test, race condition test, duplicate webhook, cron idempotency, release gates                                                         |
 
 ---
 
@@ -845,6 +845,8 @@ jobs:
 ```
 
 P1-07 requires the `unit` and `db-integration` jobs. The `e2e` job is a later milestone/release-readiness layer and should not block the Phase 1 harness unless the project explicitly enables E2E in CI.
+
+Current status: the local Vitest and DB integration harness commands are implemented. The GitHub Actions workflow is deferred with P1-07 Slice 4, so the CI example above is still the target design rather than a committed workflow.
 
 ### Pipeline Rules
 

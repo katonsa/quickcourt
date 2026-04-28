@@ -75,6 +75,12 @@ npm run test:integration
 Start the test PostgreSQL service, apply migrations to `DATABASE_URL_TEST`, then run DB-backed integration tests through `vitest.config.integration.ts`. `test:db:migrate` maps Prisma's active `DATABASE_URL` to `DATABASE_URL_TEST` only for that subprocess.
 
 ```bash
+DATABASE_URL=postgresql://postgres:postgres@localhost:5433/quickcourt_test npm run db:verify-constraints
+```
+
+Verify database constraints against the migrated test database.
+
+```bash
 npm run test:db:down
 ```
 
@@ -184,6 +190,8 @@ npm run db:smoke
 ```
 
 `DATABASE_URL` is the active app and Prisma database URL. `DATABASE_URL_TEST` is the canonical DB integration test URL for the Phase 1 test harness and must not point at the same database as `DATABASE_URL`. P1-07 keeps unit tests DB-free; DB-backed tests use `*.integration.test.ts` and run through `npm run test:integration`. Prepare the test database with `npm run test:db:migrate` before running DB integration tests.
+
+P1-07 currently has the local Vitest, foundation env, and DB integration harness slices in place. The CI workflow slice is deferred, and P1-08 owns final behavior coverage for auth config, email sender selection, access helpers, route guards, and shell smoke paths.
 
 P1-03 seeds platform settings in all environments and sample organization/member data only in development or test. It does not seed Better Auth password credentials; create the first admin user through Better Auth, then promote that user to `role = "admin"` through an auth-aware bootstrap step.
 
