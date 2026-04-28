@@ -243,6 +243,66 @@ Suggested commit:
 docs(auth): document organization access guards
 ```
 
+## Implementation Notes
+
+- Access helpers live in `lib/auth/access.ts`.
+  - `requireUser()` resolves the current Better Auth session user.
+  - `requireAdmin()` grants admin access from `User.role === "admin"`.
+  - `getOrganizationMembershipsForUser(userId)` loads Organization membership records with `organization.venue` and `branchAccess` for later venue workflows.
+  - `requireAnyOrganizationMember()` grants venue dashboard access from `Member` records, not `User.role`.
+  - `requireOrganizationOwner()` is available for later owner-only flows.
+- Route guard response helpers live in `lib/auth/guards.ts`.
+  - Unauthenticated route access redirects to `/sign-in`.
+  - Authenticated-but-insufficient access redirects to `/forbidden`.
+  - Shared route constants live in `lib/auth/paths.ts` so server guards and `proxy.ts` can share stable paths without importing `server-only` modules into proxy.
+- Protected route guards are enforced by server layouts.
+  - `app/(dashboard)/layout.tsx` requires an authenticated user for `/dashboard/*`.
+  - `app/(dashboard)/dashboard/venue/layout.tsx` requires Organization membership for `/dashboard/venue/*`.
+  - `app/(admin)/layout.tsx` requires admin role for `/admin/*`.
+- Minimal protected placeholder pages exist for `/dashboard`, `/dashboard/venue`, and `/admin`.
+  - These pages intentionally avoid auth forms, organization creation UI, owner invitation UI, staff invitation UI, venue onboarding, booking, or payment flows.
+- Minimal access denial route pages exist at `/unauthorized` and `/forbidden`.
+  - These are placeholders for P1-05 verification and may be restyled or replaced by P1-06.
+- `proxy.ts` is implemented as an optional optimistic request-level check.
+  - It matches only `/dashboard/:path*` and `/admin/:path*`.
+  - It checks only for a Better Auth session cookie and redirects unauthenticated requests to `/sign-in?redirectTo=...`.
+  - It does not perform Prisma queries, admin checks, or Organization membership checks.
+  - Server layouts remain the source of truth for all authorization.
+- Development/test seed support creates guard verification identities without raw-seeding Better Auth password credentials:
+  - admin user,
+  - regular non-member user,
+  - venue owner user with `Member.role === "owner"`,
+  - venue staff user with `Member.role === "member"`.
+
+## Milestone 2 Integration Points
+
+- Owner invitation should create or activate an Organization `Member` record with `role: "owner"`.
+- Staff invitation should create or activate an Organization `Member` record with `role: "member"`.
+- Staff branch-level permissions should use `MemberBranchAccess`; P1-05 only grants broad venue dashboard access from Organization membership.
+- Venue onboarding should create or link the `Organization -> Venue` relationship so membership-derived access can resolve the related venue context.
+- Future owner-only screens should use `requireOrganizationOwner()` or `requireOrganizationOwnerForRoute()`.
+- Future service-layer mutations must call access helpers directly and must not rely on `proxy.ts`.
+
+## Completed Verification
+
+```bash
+npm run db:migrate
+npm run db:verify-constraints
+npm run db:seed
+npm run typecheck
+npm run lint
+npm run test
+npm run build
+```
+
+Verification result:
+
+- Database migrations were already in sync.
+- Database constraints verified successfully.
+- Seed completed successfully with idempotent guard fixtures.
+- Unit tests passed: 7 files, 46 tests.
+- Production build passed and included protected dynamic routes plus `Proxy (Middleware)`.
+
 ## Files / Modules
 
 Likely touched:
@@ -274,15 +334,15 @@ prisma/seed.ts
 
 ## Acceptance Criteria
 
-- [ ] Unauthenticated users cannot access `/dashboard/*`, `/dashboard/venue/*`, or `/admin/*`.
-- [ ] Authenticated users can access `/dashboard`.
-- [ ] Non-admin users cannot access `/admin`.
-- [ ] Admin users can access `/admin`.
-- [ ] Users without organization membership cannot access `/dashboard/venue`.
-- [ ] Users with organization membership can access `/dashboard/venue`.
-- [ ] Venue access does not rely on `User.role`.
-- [ ] Helper functions are reusable by later service/page code.
-- [ ] No owner invitation or organization creation UI is added.
+- [x] Unauthenticated users cannot access `/dashboard/*`, `/dashboard/venue/*`, or `/admin/*`.
+- [x] Authenticated users can access `/dashboard`.
+- [x] Non-admin users cannot access `/admin`.
+- [x] Admin users can access `/admin`.
+- [x] Users without organization membership cannot access `/dashboard/venue`.
+- [x] Users with organization membership can access `/dashboard/venue`.
+- [x] Venue access does not rely on `User.role`.
+- [x] Helper functions are reusable by later service/page code.
+- [x] No owner invitation or organization creation UI is added.
 
 ## Test Plan
 
