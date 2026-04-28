@@ -97,14 +97,14 @@ Milestone berikut disusun agar tiap fase punya boundary yang jelas untuk dokumen
 Detailed Phase 1 working docs and implementation task specs live in [`docs/phase-1/`](./phase-1/README.md).
 
 - Setup project Next.js 16 + TypeScript strict.
-- Setup PostgreSQL 17 (Docker) dan Prisma v7.
-- Migration schema + migration constraint PostgreSQL terpisah.
+- Setup PostgreSQL 17 (Docker) dan Prisma v7, dengan runtime client di `lib/db.ts`.
+- Migration schema + migration constraint PostgreSQL terpisah; constraint PostgreSQL khusus menjadi source of truth di raw SQL migration.
 - Setup Better Auth email/password + Admin Plugin + Organization Plugin.
 - Auth UI: login, register, logout, email verification, forgot/reset password, dan change password.
 - Resend email sender abstraction + development console fallback.
 - Better Auth built-in `rateLimit` untuk endpoint auth.
 - Role-based route protection dan access helper dasar.
-- Seed script idempotent, termasuk admin bootstrap dan optional seed organization untuk development/test.
+- Seed script idempotent, termasuk admin bootstrap path dan optional seed organization untuk development/test tanpa raw-seeding credential Better Auth.
 - UI library (shadcn/ui) + shell layouts: public marketplace `/venues`, user dashboard `/dashboard`, venue management `/dashboard/venue`, admin `/admin`.
 - Structured logging (Pino) — setup dari awal agar semua service layer konsisten.
 - Global error boundary + route group error pages.

@@ -98,9 +98,11 @@ npm run build
 If DB is available:
 
 ```text
+npm run db:generate
 npm run db:migrate
 npm run db:verify-constraints
 npm run db:seed
+npm run db:smoke
 ```
 
 ## Edge Cases
@@ -108,6 +110,7 @@ npm run db:seed
 - CI may not have a PostgreSQL service by default.
 - Some DB tests may need to be marked integration and run separately.
 - Environment variables in CI must not use production secrets.
+- P1-03 reserves `DATABASE_URL_TEST` for test harnesses. Do not configure it to the same database as `DATABASE_URL`.
 - This task can be `Done` before auth/access/page behavior exists, as long as P1-08 remains open for that coverage.
 
 ## Risks

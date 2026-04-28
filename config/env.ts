@@ -39,6 +39,16 @@ const urlSchema = z
   .trim()
   .pipe(z.url({ error: "must be a valid absolute URL" }))
 
+const databaseUrlSchema = z
+  .string()
+  .trim()
+  .min(1, "is required")
+  .refine(isPostgresUrl, "must be a PostgreSQL connection URL")
+
+const optionalDatabaseUrlSchema = databaseUrlSchema
+  .optional()
+  .or(z.literal("").transform(() => undefined))
+
 const optionalNonEmptyString = z
   .string()
   .trim()
@@ -57,7 +67,8 @@ const rawEnvSchema = z
     APP_ENV: appEnvSchema.optional(),
     APP_URL: urlSchema,
     LOG_LEVEL: logLevelSchema,
-    DATABASE_URL: z.string().trim().min(1, "is required"),
+    DATABASE_URL: databaseUrlSchema,
+    DATABASE_URL_TEST: optionalDatabaseUrlSchema,
     BETTER_AUTH_SECRET: z
       .string()
       .trim()
@@ -70,6 +81,17 @@ const rawEnvSchema = z
   .superRefine((input, context) => {
     const appEnv = resolveAppEnv(input.NODE_ENV, input.APP_ENV)
     const emailProvider = resolveEmailProvider(input.EMAIL_PROVIDER, input)
+
+    if (
+      input.DATABASE_URL_TEST &&
+      input.DATABASE_URL_TEST === input.DATABASE_URL
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["DATABASE_URL_TEST"],
+        message: "must not be the same database as DATABASE_URL",
+      })
+    }
 
     if (!requiresResendConfig(appEnv, emailProvider)) {
       return
@@ -103,6 +125,7 @@ const rawEnvSchema = z
       APP_URL: input.APP_URL,
       LOG_LEVEL: input.LOG_LEVEL,
       DATABASE_URL: input.DATABASE_URL,
+      DATABASE_URL_TEST: input.DATABASE_URL_TEST,
       BETTER_AUTH_SECRET: input.BETTER_AUTH_SECRET,
       BETTER_AUTH_URL: input.BETTER_AUTH_URL,
       EMAIL_PROVIDER: emailProvider,
@@ -195,6 +218,16 @@ function requiresResendConfig(
 
 function isHostedAppEnv(appEnv: AppEnv): boolean {
   return appEnv === "production" || appEnv === "staging"
+}
+
+function isPostgresUrl(value: string): boolean {
+  try {
+    const url = new URL(value)
+
+    return url.protocol === "postgresql:" || url.protocol === "postgres:"
+  } catch {
+    return false
+  }
 }
 
 function formatEnvError(issues: z.core.$ZodIssue[]): string {

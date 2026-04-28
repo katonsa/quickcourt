@@ -61,7 +61,7 @@ prisma/schema.prisma
 prisma/migrations/**
 prisma/verify-db-constraints.sql
 prisma/seed.ts
-server/db.ts
+lib/db.ts
 package.json
 .env.example
 ```
@@ -76,15 +76,15 @@ package.json
 
 ## Acceptance Criteria
 
-- [ ] Prisma client can be generated.
-- [ ] Prisma dependencies and schema files exist if they were missing.
-- [ ] Database schema can be applied to a clean local DB.
-- [ ] PostgreSQL-specific constraints can be applied.
-- [ ] Constraint verification script passes.
-- [ ] Seed script is idempotent.
-- [ ] Admin bootstrap path is documented.
-- [ ] Optional sample organization/member seed is development/test-only.
-- [ ] Migration workflow is documented.
+- [x] Prisma client can be generated.
+- [x] Prisma dependencies and schema files exist if they were missing.
+- [x] Database schema can be applied to a clean local DB.
+- [x] PostgreSQL-specific constraints can be applied.
+- [x] Constraint verification script passes.
+- [x] Seed script is idempotent.
+- [x] Admin bootstrap path is documented.
+- [x] Optional sample organization/member seed is development/test-only.
+- [x] Migration workflow is documented.
 
 ## Test Plan
 
@@ -109,3 +109,82 @@ package.json
 ## Done When
 
 A clean developer/test database can be created, migrated, verified, seeded idempotently, and used by later auth/access tasks.
+
+## Implementation Notes
+
+- Use the existing full Prisma schema as the P1-03 baseline.
+- The runtime Prisma client lives in `lib/db.ts`, not `server/db.ts`.
+- Prisma client output is `generated/prisma`; importing from `@prisma/client` is not valid for the generated runtime client in this app.
+- `DATABASE_URL` is the active app and Prisma database URL.
+- `DATABASE_URL_TEST` is the optional canonical test database URL and must not point at the same database as `DATABASE_URL`.
+- Do not raw-seed Better Auth password/account credentials in P1-03. Admin bootstrap is documented as a later auth-aware promotion path after a user exists through Better Auth.
+
+### Implemented Artifacts
+
+- `docker-compose.yml` provides local PostgreSQL 17.
+- `prisma.config.ts` points Prisma to `prisma/schema.prisma` and `prisma/migrations`.
+- `prisma/schema.prisma` contains Better Auth-compatible core/admin/organization models plus the full current QuickCourt domain schema.
+- `prisma/migrations/20260428000100_init_extensions/migration.sql` creates required PostgreSQL extensions.
+- `prisma/migrations/20260428000200_init_domain_schema/migration.sql` creates the full schema generated from Prisma.
+- `prisma/migrations/20260428000300_add_database_constraints/migration.sql` applies PostgreSQL-specific constraints.
+- `prisma/verify-db-constraints.sql` fails when required DB constraints or extensions are missing.
+- `prisma/seed.ts` is idempotent and avoids production sample data.
+- `scripts/verify-db-constraints.ts` and `scripts/db-smoke.ts` provide scriptable DB verification.
+- `lib/db.ts` exposes the server-only Prisma runtime client.
+
+### Migration Workflow
+
+Migrations are intentionally split into three reviewable steps:
+
+1. `init_extensions`
+   - `pgcrypto`
+   - `citext`
+   - `btree_gist`
+2. `init_domain_schema`
+   - Prisma-generated full current domain schema.
+   - Includes Better Auth-compatible core/admin/organization models and QuickCourt domain models.
+3. `add_database_constraints`
+   - Final authority for generated `time_range` columns.
+   - Adds exclusion constraints, partial unique indexes, and check constraints.
+
+Run locally:
+
+```bash
+npm run db:up
+npm run db:generate
+npm run db:migrate
+npm run db:verify-constraints
+npm run db:seed
+npm run db:smoke
+```
+
+Run deployment migrations:
+
+```bash
+npm run db:migrate:deploy
+```
+
+Reset local development data:
+
+```bash
+npm run db:reset
+```
+
+`db:reset` is destructive and must only be used against a disposable local development database.
+
+### Verification Evidence
+
+P1-03 was marked `Done` after these commands passed:
+
+```bash
+npx prisma validate
+npm run db:generate
+npm run db:migrate
+npm run db:verify-constraints
+npm run db:seed
+npm run db:seed
+npm run db:smoke
+npm run typecheck
+npm run lint
+npm run build
+```

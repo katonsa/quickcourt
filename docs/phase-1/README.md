@@ -71,6 +71,10 @@ Important Phase 1 decisions:
 - Server-only env is validated through `config/env.ts`; browser-safe env is exposed separately through `config/public-env.ts`.
 - Pino is the structured logger for Phase 1, with default redaction for secrets and high-risk PII.
 - Error pages use generic user-facing messages; server-side helpers own normalization and logging.
+- P1-03 uses PostgreSQL 17 and Prisma v7 with a three-step migration sequence: extensions, full domain schema, then PostgreSQL-specific constraints.
+- Runtime Prisma access lives in `lib/db.ts`; the generated client output is `generated/prisma`.
+- `DATABASE_URL_TEST` is the canonical optional test database URL and must differ from `DATABASE_URL` when provided.
+- Development/test seeding may create sample organization membership data, but credential creation stays owned by Better Auth.
 
 ## Status Workflow
 

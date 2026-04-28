@@ -54,6 +54,44 @@ npm run test
 
 Placeholder test command until the Phase 1 testing harness is added.
 
+### Database Commands
+
+```bash
+npm run db:up
+```
+
+Start the local PostgreSQL 17 service defined in `docker-compose.yml`.
+
+```bash
+npm run db:generate
+```
+
+Generate the Prisma client into `generated/prisma`.
+
+```bash
+npm run db:migrate
+```
+
+Apply local development migrations to `DATABASE_URL`.
+
+```bash
+npm run db:verify-constraints
+```
+
+Verify required PostgreSQL extensions, generated range columns, partial indexes, exclusion constraints, and check constraints.
+
+```bash
+npm run db:seed
+```
+
+Seed platform defaults and development/test-only organization membership data.
+
+```bash
+npm run db:smoke
+```
+
+Run a minimal database connectivity check.
+
 ## Environment
 
 Copy `.env.example` to `.env` for local development. Real `.env` files are ignored and must not be committed.
@@ -75,6 +113,43 @@ Required Phase 1 env includes:
 - `EMAIL_FROM`
 
 Development and test may use `EMAIL_PROVIDER=console` without Resend credentials. Staging and production require `RESEND_API_KEY` and `EMAIL_FROM`.
+
+Optional local/test env:
+
+- `DATABASE_URL_TEST`
+
+## Database
+
+Prisma v7 is configured through `prisma.config.ts` and uses the generated client in `generated/prisma`. Runtime access lives in `lib/db.ts`.
+
+Local PostgreSQL defaults:
+
+- Docker service: `postgres`
+- Image: `postgres:17-alpine`
+- Database: `quickcourt`
+- User/password: `postgres` / `postgres`
+- Port: `5432`
+
+Local workflow:
+
+```bash
+npm run db:up
+npm run db:generate
+npm run db:migrate
+npm run db:verify-constraints
+npm run db:seed
+npm run db:smoke
+```
+
+`DATABASE_URL` is the active app and Prisma database URL. `DATABASE_URL_TEST` is optional and reserved as the canonical test database URL for the Phase 1 test harness; when present, it must not point at the same database as `DATABASE_URL`.
+
+P1-03 seeds platform settings in all environments and sample organization/member data only in development or test. It does not seed Better Auth password credentials; create the first admin user through Better Auth, then promote that user to `role = "admin"` through an auth-aware bootstrap step.
+
+Migration structure:
+
+- `20260428000100_init_extensions` creates `pgcrypto`, `citext`, and `btree_gist`.
+- `20260428000200_init_domain_schema` creates the full Prisma schema.
+- `20260428000300_add_database_constraints` is the source of truth for generated `time_range` columns and PostgreSQL-specific constraints.
 
 ## Observability and Errors
 

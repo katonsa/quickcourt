@@ -424,11 +424,13 @@ export { prisma }
 
 ```bash
 # .env.test
-DATABASE_URL="postgresql://postgres:postgres@localhost:5433/quickcourt_test"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/quickcourt"
 DATABASE_URL_TEST="postgresql://postgres:postgres@localhost:5433/quickcourt_test"
 BETTER_AUTH_SECRET="test-secret-do-not-use-in-prod"
 XENDIT_CALLBACK_TOKEN="test-callback-token"
 ```
+
+`DATABASE_URL_TEST` is the canonical test database URL introduced by P1-03. Do not persist `DATABASE_URL` and `DATABASE_URL_TEST` with the same value because `config/env.ts` rejects that configuration. Test scripts that need Prisma's active datasource should map `DATABASE_URL` to `DATABASE_URL_TEST` only for that subprocess.
 
 ### 5.5 Docker Compose untuk Test DB
 
@@ -436,7 +438,7 @@ XENDIT_CALLBACK_TOKEN="test-callback-token"
 # docker-compose.test.yml
 services:
   postgres-test:
-    image: postgres:17
+    image: postgres:17-alpine
     ports:
       - "5433:5432"
     environment:
@@ -463,7 +465,7 @@ services:
     "test:e2e:ui": "playwright test --ui",
     "test:db:up": "docker compose -f docker-compose.test.yml up -d",
     "test:db:down": "docker compose -f docker-compose.test.yml down",
-    "test:db:migrate": "dotenv -e .env.test -- npx prisma migrate deploy",
+    "test:db:migrate": "DATABASE_URL=$DATABASE_URL_TEST prisma migrate deploy",
     "test:all": "npm run test && npm run test:e2e",
   },
 }
@@ -720,7 +722,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:17
+        image: postgres:17-alpine
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres

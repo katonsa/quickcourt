@@ -27,6 +27,10 @@ These rules apply to all Phase 1 task specs. They are intended for both human de
 - Do not use destructive migration changes without documenting the reason.
 - Money fields must remain integer/BigInt rupiah fields; do not use floating point for money.
 - Existing anti-double-booking constraints must not be weakened.
+- Runtime Prisma access lives in `lib/db.ts`; do not create a parallel database client module without a decision-log entry.
+- `DATABASE_URL` is the active app datasource. `DATABASE_URL_TEST` is reserved for the test harness and must not point at the same database when both are present.
+- Generated `time_range` columns and exclusion constraints are owned by explicit SQL migrations, not by Prisma schema comments alone.
+- Seed scripts must be idempotent and must not raw-seed Better Auth password credentials.
 
 ## Auth and Access Control
 

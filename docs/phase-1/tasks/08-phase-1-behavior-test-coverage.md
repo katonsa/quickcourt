@@ -92,7 +92,9 @@ npm run lint
 If DB-backed behavior tests are enabled:
 
 ```text
+npm run db:generate
 npm run db:migrate
+npm run db:verify-constraints
 npm run db:seed
 npm run test
 ```
@@ -100,6 +102,7 @@ npm run test
 ## Edge Cases
 
 - Better Auth integration tests may need a real test database instead of mocked Prisma.
+- P1-03 reserves `DATABASE_URL_TEST` for test DB wiring; avoid pointing it at the same database as `DATABASE_URL`.
 - Route guard tests may need to mock session resolution if full request integration is not practical in Vitest.
 - UI smoke tests should assert user-safe states without depending on unstable implementation details.
 
