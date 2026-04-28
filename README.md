@@ -52,7 +52,9 @@ Format TypeScript and TSX files with Prettier.
 npm run test
 ```
 
-Placeholder test command until the Phase 1 testing harness is added.
+Placeholder test command until the Phase 1 testing harness is added. P1-07 will make this the unit-only test command and keep it DB-free.
+
+P1-07 also adds `npm run test:db:migrate` for test DB migration, `npm run test:integration` for DB-backed integration harness tests against `DATABASE_URL_TEST`, and `npm run test:all` for unit and DB integration tests together. The harness uses `vitest.config.ts` for shared settings, `vitest.config.unit.ts` for unit tests, and `vitest.config.integration.ts` for DB integration tests.
 
 ### Database Commands
 
@@ -114,7 +116,7 @@ Required Phase 1 env includes:
 
 Development and test may use `EMAIL_PROVIDER=console` without Resend credentials. Staging and production require `RESEND_API_KEY` and `EMAIL_FROM`.
 
-Optional local/test env:
+Local/test env:
 
 - `DATABASE_URL_TEST`
 - `ADMIN_BOOTSTRAP_EMAIL`
@@ -142,7 +144,7 @@ npm run db:seed
 npm run db:smoke
 ```
 
-`DATABASE_URL` is the active app and Prisma database URL. `DATABASE_URL_TEST` is optional and reserved as the canonical test database URL for the Phase 1 test harness; when present, it must not point at the same database as `DATABASE_URL`.
+`DATABASE_URL` is the active app and Prisma database URL. `DATABASE_URL_TEST` is the canonical DB integration test URL for the Phase 1 test harness and must not point at the same database as `DATABASE_URL`. P1-07 keeps unit tests DB-free; DB-backed tests use `*.integration.test.ts` and run through `npm run test:integration`.
 
 P1-03 seeds platform settings in all environments and sample organization/member data only in development or test. It does not seed Better Auth password credentials; create the first admin user through Better Auth, then promote that user to `role = "admin"` through an auth-aware bootstrap step.
 

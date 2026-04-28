@@ -73,7 +73,8 @@ Important Phase 1 decisions:
 - Error pages use generic user-facing messages; server-side helpers own normalization and logging.
 - P1-03 uses PostgreSQL 17 and Prisma v7 with a three-step migration sequence: extensions, full domain schema, then PostgreSQL-specific constraints.
 - Runtime Prisma access lives in `lib/db.ts`; the generated client output is `generated/prisma`.
-- `DATABASE_URL_TEST` is the canonical optional test database URL and must differ from `DATABASE_URL` when provided.
+- `DATABASE_URL_TEST` is the canonical integration test database URL and must differ from `DATABASE_URL`.
+- P1-07 requires a DB integration harness: unit tests stay DB-free, DB-backed tests use `*.integration.test.ts`, and CI runs them against PostgreSQL.
 - Development/test seeding may create sample organization membership data, but credential creation stays owned by Better Auth.
 
 ## Status Workflow
@@ -110,7 +111,7 @@ P1-07 may start once the database foundation exists; P1-08 is the final Phase 1 
 Phase 1 is done when:
 
 - All task specs in [`breakdown.md`](./breakdown.md) are `Done`.
-- Typecheck, lint, tests, and migration verification pass locally and in CI.
+- Typecheck, lint, unit tests, DB integration harness tests, and migration verification pass locally and in CI.
 - Auth account flows are implemented or explicitly mocked according to environment rules.
 - Auth rate limiting is configured through Better Auth.
 - Resend integration exists behind an email sender abstraction.

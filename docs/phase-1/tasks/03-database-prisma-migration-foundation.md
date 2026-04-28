@@ -116,7 +116,7 @@ A clean developer/test database can be created, migrated, verified, seeded idemp
 - The runtime Prisma client lives in `lib/db.ts`, not `server/db.ts`.
 - Prisma client output is `generated/prisma`; importing from `@prisma/client` is not valid for the generated runtime client in this app.
 - `DATABASE_URL` is the active app and Prisma database URL.
-- `DATABASE_URL_TEST` is the optional canonical test database URL and must not point at the same database as `DATABASE_URL`.
+- `DATABASE_URL_TEST` is reserved as the canonical DB integration test database URL, must not point at the same database as `DATABASE_URL`, and becomes required for the P1-07 DB integration harness.
 - Do not raw-seed Better Auth password/account credentials in P1-03. Admin bootstrap is documented as a later auth-aware promotion path after a user exists through Better Auth.
 
 ### Implemented Artifacts

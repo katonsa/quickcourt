@@ -18,8 +18,9 @@ QuickCourt adalah **marketplace transaksional** — bug pada booking, payment, a
 1. **Critical path first** — Test booking flow, payment webhook, dan ledger sebelum yang lain.
 2. **Test behavior, bukan implementation** — Validasi output dan side effects, bukan internal function calls.
 3. **Database-backed tests** — Service layer test harus menggunakan real database (test DB), bukan mock Prisma.
-4. **Fast feedback loop** — Unit test harus cepat (<10 detik). Integration test boleh lebih lambat tapi tetap terkontrol.
-5. **Idempotency harus dibuktikan** — Webhook dan cron job harus ditest dengan repeated execution.
+4. **Pisahkan unit dan integration** — `npm run test` harus tetap DB-free; DB-backed tests berjalan lewat `npm run test:integration`.
+5. **Fast feedback loop** — Unit test harus cepat (<10 detik). Integration test boleh lebih lambat tapi tetap terkontrol.
+6. **Idempotency harus dibuktikan** — Webhook dan cron job harus ditest dengan repeated execution.
 
 ---
 
@@ -59,7 +60,7 @@ npm i -D @playwright/test
 npx playwright install --with-deps chromium
 
 # Utilities
-npm i -D dotenv-cli  # Untuk load .env.test
+# dotenv-cli boleh ditambahkan jika project memilih .env.test file loading eksplisit.
 ```
 
 ---
@@ -331,26 +332,58 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
-    include: ["**/*.test.ts", "**/*.spec.ts"],
-    exclude: ["e2e/**"],
-    setupFiles: ["./test/setup.ts"],
-    coverage: {
-      provider: "v8",
-      include: ["lib/**", "services/**"],
-      exclude: ["test/**", "**/*.d.ts"],
-    },
     // Isolate test files untuk menghindari state leakage
     pool: "forks",
-    // Timeout lebih panjang untuk integration test
-    testTimeout: 15_000,
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(__dirname, "."),
     },
   },
 })
 ```
+
+```typescript
+// vitest.config.unit.ts
+import { defineConfig, mergeConfig } from "vitest/config"
+import baseConfig from "./vitest.config"
+
+export default mergeConfig(
+  baseConfig,
+  defineConfig({
+    test: {
+      include: ["**/*.test.ts", "**/*.spec.ts"],
+      exclude: ["e2e/**", "**/*.integration.test.ts"],
+      setupFiles: ["./test/setup.ts"],
+      coverage: {
+        provider: "v8",
+        include: ["app/**", "components/**", "config/**", "lib/**"],
+        exclude: ["test/**", "**/*.d.ts", "**/*.integration.test.ts"],
+      },
+    },
+  }),
+)
+```
+
+```typescript
+// vitest.config.integration.ts
+import { defineConfig, mergeConfig } from "vitest/config"
+import baseConfig from "./vitest.config"
+
+export default mergeConfig(
+  baseConfig,
+  defineConfig({
+    test: {
+      include: ["**/*.integration.test.ts"],
+      setupFiles: ["./test/integration/setup.ts"],
+      testTimeout: 15_000,
+      hookTimeout: 15_000,
+    },
+  }),
+)
+```
+
+Unit dan integration tests memakai shared base config, tetapi entrypoint-nya terpisah. Jangan memuat Prisma/test DB dari `test/setup.ts` global, karena file itu ikut dipakai unit tests.
 
 ### 5.2 Playwright Config
 
@@ -386,51 +419,72 @@ export default defineConfig({
 
 ```typescript
 // test/setup.ts
-import { PrismaPg } from "@prisma/adapter-pg"
-import { PrismaClient } from "../../generated/prisma/client"
-import { beforeAll, afterAll, beforeEach } from "vitest"
+import { afterEach, vi } from "vitest"
 
-const connectionString = process.env.DATABASE_URL_TEST!
-const adapter = new PrismaPg({ connectionString })
-const prisma = new PrismaClient({
+afterEach(() => {
+  vi.restoreAllMocks()
+})
+```
+
+Integration setup memvalidasi env sebelum DB-backed tests berjalan:
+
+```typescript
+// test/integration/setup.ts
+if (!process.env.DATABASE_URL_TEST) {
+  throw new Error("DATABASE_URL_TEST is required for DB integration tests")
+}
+
+if (process.env.DATABASE_URL_TEST === process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL_TEST must not equal DATABASE_URL")
+}
+```
+
+DB helper untuk integration tests dipisah agar unit tests tidak membutuhkan PostgreSQL:
+
+```typescript
+// test/integration/db.ts
+import { PrismaPg } from "@prisma/adapter-pg"
+import { PrismaClient } from "@/generated/prisma/client"
+
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL_TEST!,
+})
+
+export const prisma = new PrismaClient({
   adapter,
 })
+```
 
-beforeAll(async () => {
-  // Pastikan test DB sudah di-migrate
-  // Bisa pakai: npx prisma migrate deploy --schema=./prisma/schema.prisma
+Minimal P1-07 DB integration smoke test cukup membuktikan harness, koneksi test DB, dan migrated schema. Jangan truncate/reset/seed database development dari integration tests.
+
+```typescript
+// test/integration/db.integration.test.ts
+import { afterAll, describe, expect, it } from "vitest"
+import { prisma } from "./db"
+
+describe("DB integration harness", () => {
+  afterAll(async () => {
+    await prisma.$disconnect()
+  })
+
+  it("connects to the migrated test database", async () => {
+    const result = await prisma.$queryRaw<{ ok: number }[]>`SELECT 1 AS ok`
+
+    expect(result[0]?.ok).toBe(1)
+  })
 })
-
-beforeEach(async () => {
-  // Truncate semua table sebelum setiap test
-  // Urutan penting karena foreign key constraints
-  const tables = await prisma.$queryRaw<{ tablename: string }[]>`
-    SELECT tablename FROM pg_tables WHERE schemaname = 'public'
-  `
-
-  await prisma.$executeRawUnsafe(`
-    TRUNCATE TABLE ${tables.map((t) => `"${t.tablename}"`).join(", ")} CASCADE
-  `)
-})
-
-afterAll(async () => {
-  await prisma.$disconnect()
-})
-
-export { prisma }
 ```
 
 ### 5.4 Environment
 
 ```bash
 # .env.test
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/quickcourt"
 DATABASE_URL_TEST="postgresql://postgres:postgres@localhost:5433/quickcourt_test"
 BETTER_AUTH_SECRET="test-secret-do-not-use-in-prod"
 XENDIT_CALLBACK_TOKEN="test-callback-token"
 ```
 
-`DATABASE_URL_TEST` is the canonical test database URL introduced by P1-03. Do not persist `DATABASE_URL` and `DATABASE_URL_TEST` with the same value because `config/env.ts` rejects that configuration. Test scripts that need Prisma's active datasource should map `DATABASE_URL` to `DATABASE_URL_TEST` only for that subprocess.
+`DATABASE_URL` remains the active app datasource. `DATABASE_URL_TEST` is the canonical DB integration test database URL introduced by P1-03 and required by the P1-07 DB integration harness. Do not persist `DATABASE_URL` and `DATABASE_URL_TEST` with the same value because `config/env.ts` rejects that configuration. Test scripts that need Prisma's active datasource should map `DATABASE_URL` to `DATABASE_URL_TEST` only for that subprocess.
 
 ### 5.5 Docker Compose untuk Test DB
 
@@ -457,19 +511,22 @@ services:
 // package.json (scripts section)
 {
   "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "test:ui": "vitest --ui",
+    "test": "vitest run --config vitest.config.unit.ts",
+    "test:watch": "vitest --config vitest.config.unit.ts",
+    "test:coverage": "vitest run --config vitest.config.unit.ts --coverage",
+    "test:integration": "vitest run --config vitest.config.integration.ts",
+    "test:all": "npm run test && npm run test:integration",
+    "test:ui": "vitest --config vitest.config.unit.ts --ui",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:db:up": "docker compose -f docker-compose.test.yml up -d",
     "test:db:down": "docker compose -f docker-compose.test.yml down",
-    "test:db:migrate": "DATABASE_URL=$DATABASE_URL_TEST prisma migrate deploy",
-    "test:all": "npm run test && npm run test:e2e",
+    "test:db:migrate": "DATABASE_URL=$DATABASE_URL_TEST npm run db:migrate:deploy"
   },
 }
 ```
+
+`test`, `test:watch`, dan `test:coverage` memakai unit config. `test:db:migrate` menyiapkan schema test DB dengan mapping subprocess-local dari `DATABASE_URL` ke `DATABASE_URL_TEST`. `test:integration` memakai integration config, hanya memilih `*.integration.test.ts`, dan harus gagal jelas jika `DATABASE_URL_TEST` belum tersedia.
 
 ---
 
@@ -478,7 +535,10 @@ services:
 ```
 
 ├── test/
-│   ├── setup.ts                   # Global test setup (DB connection, cleanup)
+│   ├── setup.ts                   # Global unit-safe setup; no DB connection
+│   ├── integration/
+│   │   ├── setup.ts               # Integration-only env validation
+│   │   └── db.ts                  # Prisma client/helper for DB integration tests
 │   ├── helpers/
 │   │   ├── factory.ts             # Test data factories (createTestUser, createTestVenue, dll)
 │   │   ├── fixtures.ts            # Reusable test fixtures
@@ -674,7 +734,7 @@ Dengan TDD, test tidak diperlakukan sebagai pekerjaan terpisah dari implementasi
 
 | Milestone                                                   | Test yang Ditulis (TDD)                                                                   |
 | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| **Milestone 1 — Foundation**                                | Setup Vitest + test DB, CI foundation, env validation, auth config, access helpers        |
+| **Milestone 1 — Foundation**                                | Setup Vitest, unit-only default test command, required DB integration harness, CI foundation, env validation, auth config, access helpers |
 | **Milestone 2 — Organization & Venue Profile Onboarding**   | TDD: org invite/accept, venue profile draft, permission, bank masking/verification        |
 | **Milestone 3 — Court, Schedule, Pricing & Venue Approval** | TDD: court CRUD, slot calculator, price calculator, operating hours, approval lifecycle   |
 | **Milestone 4 — Marketplace & Booking Core**                | TDD: booking creation, anti double-booking, state machine, cancellation policy snapshot   |
@@ -718,8 +778,22 @@ on:
     branches: [main]
 
 jobs:
-  unit-integration:
+  unit:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test
+
+  db-integration:
+    runs-on: ubuntu-latest
+    needs: unit
     services:
       postgres:
         image: postgres:17-alpine
@@ -742,16 +816,21 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx prisma migrate deploy
+      - run: npm run db:generate
+      - run: npm run test:db:migrate
+        env:
+          DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5433/quickcourt_test
+      - run: npm run db:verify-constraints
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5433/quickcourt_test
-      - run: npm test -- --coverage
+      - run: npm run test:integration
         env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/quickcourt_dev_guard
           DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5433/quickcourt_test
 
   e2e:
     runs-on: ubuntu-latest
-    needs: unit-integration
+    needs: db-integration
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -768,10 +847,12 @@ jobs:
           path: playwright-report/
 ```
 
+P1-07 requires the `unit` and `db-integration` jobs. The `e2e` job is a later milestone/release-readiness layer and should not block the Phase 1 harness unless the project explicitly enables E2E in CI.
+
 ### Pipeline Rules
 
-- **PR merge blocked** jika unit/integration test gagal.
-- **E2E test** berjalan setelah unit/integration pass.
+- **PR merge blocked** jika unit test atau DB integration harness gagal.
+- **E2E test** berjalan setelah unit/integration pass jika E2E CI sudah diaktifkan.
 - **Coverage report** di-upload sebagai artifact.
 
 ---

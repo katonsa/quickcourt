@@ -61,8 +61,8 @@ Likely touched:
 ```text
 **/*.test.ts
 **/*.test.tsx
+**/*.integration.test.ts
 test/*
-vitest.config.*
 docs/testing-strategy.md
 docs/phase-1/breakdown.md
 ```
@@ -93,16 +93,15 @@ If DB-backed behavior tests are enabled:
 
 ```text
 npm run db:generate
-npm run db:migrate
-npm run db:verify-constraints
-npm run db:seed
-npm run test
+npm run test:db:migrate
+DATABASE_URL=$DATABASE_URL_TEST npm run db:verify-constraints
+npm run test:integration
 ```
 
 ## Edge Cases
 
-- Better Auth integration tests may need a real test database instead of mocked Prisma.
-- P1-03 reserves `DATABASE_URL_TEST` for test DB wiring; avoid pointing it at the same database as `DATABASE_URL`.
+- Better Auth integration tests should use the P1-07 DB integration harness when they need a real database instead of mocked Prisma.
+- `DATABASE_URL_TEST` is the canonical DB integration test URL; avoid pointing it at the same database as `DATABASE_URL`.
 - Route guard tests may need to mock session resolution if full request integration is not practical in Vitest.
 - UI smoke tests should assert user-safe states without depending on unstable implementation details.
 
