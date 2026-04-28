@@ -18,6 +18,10 @@ export function getGenericPasswordResetErrorMessage() {
   return "We could not update the password with this reset link. Request a new link and try again."
 }
 
+export function getGenericChangePasswordErrorMessage() {
+  return "We could not update your password. Check your current password and try again."
+}
+
 function hasErrorCode(error: unknown, code: string) {
   if (!error || typeof error !== "object") {
     return false

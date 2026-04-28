@@ -4,6 +4,8 @@ export const FORGOT_PASSWORD_PATH = "/forgot-password"
 export const RESET_PASSWORD_PATH = "/reset-password"
 export const VERIFY_EMAIL_PATH = "/verify-email"
 export const DEFAULT_SIGN_IN_REDIRECT_PATH = "/dashboard"
+export const DASHBOARD_PATH = "/dashboard"
+export const DASHBOARD_SETTINGS_PATH = "/dashboard/settings"
 export const FORBIDDEN_PATH = "/forbidden"
 export const SIGN_IN_REDIRECT_PARAM = "redirectTo"
 export const EMAIL_VERIFICATION_SENT_PATH = `${VERIFY_EMAIL_PATH}?status=sent`

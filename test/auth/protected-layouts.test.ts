@@ -23,8 +23,13 @@ describe("protected route layouts", () => {
 
   it("guards the dashboard route group with authenticated user access", async () => {
     const children = "dashboard"
+    guardMocks.requireUserForRoute.mockResolvedValue({
+      email: "user@example.com",
+    })
 
-    await expect(DashboardGroupLayout({ children })).resolves.toBe(children)
+    const result = await DashboardGroupLayout({ children })
+
+    expect(result.props.children).toContain(children)
     expect(guardMocks.requireUserForRoute).toHaveBeenCalledTimes(1)
   })
 
@@ -39,6 +44,8 @@ describe("protected route layouts", () => {
     const children = "venue"
 
     await expect(VenueDashboardLayout({ children })).resolves.toBe(children)
-    expect(guardMocks.requireAnyOrganizationMemberForRoute).toHaveBeenCalledTimes(1)
+    expect(
+      guardMocks.requireAnyOrganizationMemberForRoute
+    ).toHaveBeenCalledTimes(1)
   })
 })
