@@ -42,8 +42,27 @@ describe("protected route layouts", () => {
 
   it("guards the venue dashboard route with organization membership access", async () => {
     const children = "venue"
+    guardMocks.requireAnyOrganizationMemberForRoute.mockResolvedValue({
+      membership: {
+        role: "owner",
+        organization: {
+          name: "Sample Courts",
+          slug: "sample-courts",
+          venue: {
+            name: "Sample Courts Arena",
+          },
+        },
+      },
+      memberships: [
+        {
+          id: "membership-1",
+        },
+      ],
+    })
 
-    await expect(VenueDashboardLayout({ children })).resolves.toBe(children)
+    const result = await VenueDashboardLayout({ children })
+
+    expect(result.props.children).toBe(children)
     expect(
       guardMocks.requireAnyOrganizationMemberForRoute
     ).toHaveBeenCalledTimes(1)

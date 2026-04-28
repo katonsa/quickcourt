@@ -4,6 +4,7 @@ import {
   DASHBOARD_BOOKINGS_PATH,
   DASHBOARD_PROFILE_PATH,
   DASHBOARD_SETTINGS_PATH,
+  DASHBOARD_VENUE_PATH,
 } from "@/lib/auth/paths"
 
 export default function DashboardPage() {
@@ -50,7 +51,7 @@ export default function DashboardPage() {
           </Link>
           <Link
             className="rounded-lg border p-5 transition-colors hover:bg-accent"
-            href="/dashboard/venue"
+            href={DASHBOARD_VENUE_PATH}
           >
             <h2 className="text-sm font-medium text-foreground">
               Venue workspace

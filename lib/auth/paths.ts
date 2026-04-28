@@ -9,6 +9,7 @@ export const DASHBOARD_BOOKINGS_PATH = "/dashboard/bookings"
 export const DASHBOARD_PROFILE_PATH = "/dashboard/profile"
 export const DASHBOARD_SETTINGS_PATH = "/dashboard/settings"
 export const DASHBOARD_SUPPORT_PATH = "/dashboard/support"
+export const DASHBOARD_VENUE_PATH = "/dashboard/venue"
 export const FORBIDDEN_PATH = "/forbidden"
 export const SIGN_IN_REDIRECT_PARAM = "redirectTo"
 export const EMAIL_VERIFICATION_SENT_PATH = `${VERIFY_EMAIL_PATH}?status=sent`
