@@ -41,7 +41,7 @@ export function DashboardNav() {
     <SidebarGroup>
       <SidebarGroupLabel>Workspace</SidebarGroupLabel>
       <SidebarGroupContent>
-        <SidebarMenu>
+        <SidebarMenu className="gap-1">
           {dashboardNavItems.map((item) => {
             const Icon = item.icon
             const isActive = pathname === item.href
