@@ -10,9 +10,9 @@ import {
   requireOrganizationOwner,
   requireUser,
 } from "@/lib/auth/access"
+import { FORBIDDEN_PATH, SIGN_IN_PATH } from "@/lib/auth/paths"
 
-export const SIGN_IN_PATH = "/sign-in"
-export const FORBIDDEN_PATH = "/forbidden"
+export { FORBIDDEN_PATH, SIGN_IN_PATH }
 
 export function redirectToSignIn(): never {
   redirect(SIGN_IN_PATH)
