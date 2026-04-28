@@ -799,6 +799,17 @@ lib/validation/auth.ts
 - 2026-04-29: local route smoke against the running dev server on port 3000 returned 200 for `/sign-in`, `/venues`, `/unauthorized`, and `/forbidden`; unauthenticated `/dashboard`, `/dashboard/venue`, and `/admin` returned 307 redirects to canonical `/sign-in?redirectTo=...`.
 - Broader browser/E2E auth behavior coverage remains owned by P1-08.
 
+## Completion Notes
+
+- Auth UI routes are implemented at canonical `/sign-in` and `/sign-up`, with `/login` and `/register` redirect aliases.
+- Recovery, reset password, verification notice/status, logout, and authenticated password change UI are present with generic user-safe messaging.
+- Public marketplace pages remain in `app/page.tsx` and `app/venues/page.tsx`.
+- User, venue, and admin shells are implemented without changing P1-05 access policy; venue access remains Organization membership-based and admin access remains admin role-based.
+- Venue/admin navigation entries for future work are placeholders only.
+- Forbidden, unauthorized, loading, and route error states are generic and avoid internal error details.
+- P1-06 added focused validation and component smoke coverage; P1-08 owns final shared behavior/page/shell coverage and any future E2E coverage.
+- No organization creation, venue onboarding, invitations, staff permission editor, booking/payment, finance, venue approval, or admin operational workflow was implemented.
+
 ## Edge Cases
 
 - Reset password with invalid/expired token.

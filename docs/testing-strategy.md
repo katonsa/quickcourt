@@ -846,7 +846,7 @@ jobs:
 
 P1-07 requires the `unit` and `db-integration` jobs. The `e2e` job is a later milestone/release-readiness layer and should not block the Phase 1 harness unless the project explicitly enables E2E in CI.
 
-Current status: the local Vitest and DB integration harness commands are implemented. The GitHub Actions workflow is deferred with P1-07 Slice 4, so the CI example above is still the target design rather than a committed workflow.
+Current status: the local Vitest and DB integration harness commands are implemented. Unit tests include `*.test.ts` and `*.test.tsx` files, with P1-06 adding focused auth UI smoke coverage. The GitHub Actions workflow is deferred with P1-07 Slice 4, so the CI example above is still the target design rather than a committed workflow. Broader auth page and protected shell behavior coverage remains scoped to P1-08.
 
 ### Pipeline Rules
 

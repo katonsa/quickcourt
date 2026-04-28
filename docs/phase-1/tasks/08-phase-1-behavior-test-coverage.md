@@ -8,6 +8,8 @@ Add the final Phase 1 behavior coverage for auth, email sender selection, access
 
 P1-07 creates the test runner, database convention, scripts, and CI pipeline. This task uses that harness to cover the behavior introduced by P1-04, P1-05, and P1-06 without blocking earlier CI setup work.
 
+P1-06 added focused validation and component smoke coverage for stable auth UI pieces, but intentionally deferred broader auth page, protected shell, and browser/E2E behavior coverage to P1-08.
+
 ## Scope
 
 - Auth config smoke tests.
