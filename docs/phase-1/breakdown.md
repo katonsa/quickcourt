@@ -1,0 +1,79 @@
+# QuickCourt Phase 1 Breakdown
+
+## Status Legend
+
+| Status        | Meaning                                                   |
+| ------------- | --------------------------------------------------------- |
+| `Todo`        | Planned but not ready or still dependent on another task. |
+| `Ready`       | Ready to implement.                                       |
+| `In Progress` | Currently being implemented.                              |
+| `In Review`   | Implementation complete, pending review/tests.            |
+| `Blocked`     | Cannot proceed due to dependency or unresolved decision.  |
+| `Done`        | Acceptance criteria and tests are satisfied.              |
+
+## Master Task Board
+
+| ID    | Task                                       | Priority | Status | Depends On                 | Spec                                                                                                   | Acceptance Summary                                                                                 | Test Required                             |
+| ----- | ------------------------------------------ | -------: | ------ | -------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| P1-01 | App Foundation                             |       P0 | Ready  | -                          | [01-app-foundation.md](./tasks/01-app-foundation.md)                                                   | Next.js app, strict TypeScript, base structure, package scripts, UI baseline                       | Typecheck, lint smoke                     |
+| P1-02 | Env, Config, Observability, Error Handling |       P0 | Todo   | P1-01                      | [02-env-config-observability-error-handling.md](./tasks/02-env-config-observability-error-handling.md) | Env validation, logging, error boundaries, safe config loading                                     | Env validation unit tests                 |
+| P1-03 | Database, Prisma, Migration Foundation     |       P0 | Todo   | P1-01, P1-02               | [03-database-prisma-migration-foundation.md](./tasks/03-database-prisma-migration-foundation.md)       | PostgreSQL + Prisma ready, schema applied, constraints verified, migration discipline documented   | Migration verification, DB smoke test     |
+| P1-04 | Auth & Account Foundation                  |       P0 | Todo   | P1-02, P1-03               | [04-auth-account-foundation.md](./tasks/04-auth-account-foundation.md)                                 | Better Auth email/password, admin plugin, org plugin, account recovery, Resend fallback, rateLimit | Auth config smoke, P1-08 behavior tests   |
+| P1-05 | Organization Access & Route Guards         |       P0 | Todo   | P1-04                      | [05-organization-access-route-guards.md](./tasks/05-organization-access-route-guards.md)               | Access helpers and route guards for user, venue org member, and admin                              | Access helper tests, guard behavior tests |
+| P1-06 | Auth UI & Shell Layouts                    |       P0 | Todo   | P1-04, P1-05               | [06-auth-ui-and-shell-layouts.md](./tasks/06-auth-ui-and-shell-layouts.md)                             | Auth pages, dashboard shells, forbidden/unauthorized/error UI                                      | Component/page smoke tests where feasible |
+| P1-07 | Testing & CI Harness                       |       P0 | Todo   | P1-01, P1-02, P1-03        | [07-testing-ci-foundation.md](./tasks/07-testing-ci-foundation.md)                                     | Vitest, test DB conventions, CI pipeline, test scripts                                             | CI passes typecheck/lint/test             |
+| P1-08 | Phase 1 Behavior Test Coverage             |       P0 | Todo   | P1-04, P1-05, P1-06, P1-07 | [08-phase-1-behavior-test-coverage.md](./tasks/08-phase-1-behavior-test-coverage.md)                   | Auth, email, access guard, and shell smoke coverage for Phase 1 behavior                           | Auth/access/page smoke tests              |
+
+## Workstream View
+
+### Foundation
+
+- P1-01 App Foundation
+- P1-02 Env, Config, Observability, Error Handling
+- P1-07 Testing & CI Harness
+- P1-08 Phase 1 Behavior Test Coverage
+
+### Data
+
+- P1-03 Database, Prisma, Migration Foundation
+
+### Identity & Access
+
+- P1-04 Auth & Account Foundation
+- P1-05 Organization Access & Route Guards
+- P1-06 Auth UI & Shell Layouts
+
+## Phase 1 Non-Goals Checklist
+
+These items must not be implemented in Phase 1 unless a decision-log entry explicitly moves them forward:
+
+- Super Admin create Organization UI.
+- Owner invitation UI.
+- Venue onboarding form.
+- Venue approval workflow.
+- Staff invitation and branch permission editor.
+- Court management.
+- Schedule/pricing/availability management.
+- Booking and payment flow.
+- Ledger/withdrawal/refund flow.
+
+## Review Checklist
+
+Before marking Phase 1 as `Done`, confirm:
+
+- [ ] No milestone 2+ feature leaked into implementation.
+- [ ] All env variables are documented.
+- [ ] Production-required env vars fail fast when missing.
+- [ ] Development-only fallbacks are impossible to accidentally use in production.
+- [ ] Database constraints are applied and verifiable.
+- [ ] Auth endpoints use Better Auth rate limiting.
+- [ ] Resend is behind an email sender abstraction.
+- [ ] Organization access checks use membership, not `User.role`.
+- [ ] Admin access uses `User.role === "admin"` or equivalent Better Auth Admin Plugin role field.
+- [ ] Tests and CI pass.
+
+## Status and Dependency Notes
+
+- `Ready` means all listed dependencies are satisfied.
+- Tasks may be partially started only when their task spec explicitly says so.
+- Testing harness work can start before all Phase 1 behavior exists, but Phase 1 behavior coverage cannot be marked `Done` until the auth, access, and shell tasks it covers are implemented.
