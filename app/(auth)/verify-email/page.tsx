@@ -1,5 +1,8 @@
 import { AuthPageShell } from "@/components/auth/auth-page-shell"
-import { VerifyEmailNotice } from "@/components/auth/verify-email-notice"
+import {
+  VerifyEmailNotice,
+  type VerifyEmailStatus,
+} from "@/components/auth/verify-email-notice"
 
 type AuthPageSearchParams = Promise<{
   [key: string]: string | string[] | undefined
@@ -11,7 +14,7 @@ export default async function VerifyEmailPage({
   searchParams: AuthPageSearchParams
 }) {
   const params = await searchParams
-  const status = getFirstParam(params.status)
+  const status = getVerifyEmailStatus(getFirstParam(params.status))
   const providerError = getFirstParam(params.error)
 
   return (
@@ -26,4 +29,14 @@ export default async function VerifyEmailPage({
 
 function getFirstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value
+}
+
+function getVerifyEmailStatus(
+  status: string | undefined
+): VerifyEmailStatus | undefined {
+  if (status === "sent" || status === "verified" || status === "success") {
+    return status === "success" ? "verified" : status
+  }
+
+  return undefined
 }
