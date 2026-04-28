@@ -624,31 +624,42 @@ export function createBookingCode(): string {
 
 ### Arsitektur: Global Boundary + Route Group Error Pages
 
-**1. Global Error Boundary** (`/app/error.tsx`):
+**1. Root Error Boundary** (`/app/error.tsx`):
 
 - Menangkap semua unhandled errors di seluruh app.
 - Menampilkan halaman error generik dengan tombol retry.
-- Log error ke structured logger.
 
-**2. Error Pages per Route Group:**
+**2. Global Error Boundary** (`/app/global-error.tsx`):
+
+- Menangkap error di root layout/template.
+- Wajib mendefinisikan `<html>` dan `<body>`.
+- Menampilkan fallback generik tanpa stack trace atau raw error message.
+
+**3. Error Pages per Route Group:**
 
 ```
-/app/(auth)/error.tsx       → "Terjadi masalah saat login. Coba lagi."
-/app/(customer)/error.tsx   → "Halaman tidak dapat dimuat. Kembali ke beranda."
-/app/(dashboard)/dashboard/venue/error.tsx → "Dashboard error. Hubungi support jika berlanjut."
-/app/(admin)/error.tsx      → "Admin panel error." + stack trace (dev only)
+/app/(dashboard)/error.tsx → "Dashboard unavailable."
+/app/(admin)/error.tsx     → "Admin area unavailable."
 ```
 
-**3. Not Found** (`/app/not-found.tsx`):
+Route group error pages must not display stack traces, raw error messages, or internal error details to end users.
+
+**4. Not Found** (`/app/not-found.tsx`):
 
 - Halaman 404 yang branded dan helpful.
 
-**4. Server Action Errors:**
+**5. Server-side Error Normalization** (`/lib/errors.ts`):
+
+- `normalizeError(error)` mengembalikan safe error shape untuk UI/API responses.
+- `logError(error, message, context)` mengirim error ke structured logger dan mengembalikan safe error shape.
+- Server-side logging boleh menyimpan detail error untuk debugging, tetapi logger redaction tetap harus melindungi secrets/PII.
+
+**6. Server Action Errors:**
 
 - Semua server actions mengembalikan `{ success, data, error }` — tidak pernah throw di happy path.
 - Error ditampilkan via Sonner toast di client.
 
-**5. Form Validation Errors:**
+**7. Form Validation Errors:**
 
 - Zod validation errors ditampilkan inline di form fields.
 - Server-side validation errors dimapping ke field yang sesuai.
@@ -667,10 +678,16 @@ Pino dipilih karena: JSON-native, sangat cepat, low overhead, dan standar di eko
 // /lib/logger.ts
 import pino from "pino"
 
+import { serverEnv } from "@/config/env"
+
 export const logger = pino({
-  level: process.env.LOG_LEVEL ?? "info",
+  level: serverEnv.LOG_LEVEL,
+  redact: {
+    paths: loggerRedactionPaths,
+    censor: "[Redacted]",
+  },
   transport:
-    process.env.NODE_ENV === "development"
+    serverEnv.NODE_ENV === "development"
       ? { target: "pino-pretty", options: { colorize: true } }
       : undefined,
 })
@@ -702,8 +719,17 @@ Logger wajib menyensor field sensitif secara default sebelum output ditulis. Min
 - `secret`
 - `authorization`
 - `cookie`
+- `resetToken`
+- `verificationToken`
+- `sessionToken`
 - `email`
 - `phone`
+- `name`
+- `address`
+- `ip`
+- `userAgent`
+- OTP/MFA fields
+- payment-sensitive identifiers
 
 Gunakan structured fields seperti `logger.info({ userId, bookingId }, "Event")` dan hindari memasukkan PII ke message string.
 

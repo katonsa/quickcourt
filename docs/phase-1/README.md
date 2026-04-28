@@ -68,6 +68,9 @@ Important Phase 1 decisions:
 - Resend is the selected transactional email provider.
 - Because the final email domain is not ready, development may log email links to console.
 - Production requires `RESEND_API_KEY`, `EMAIL_FROM`, and a verified Resend sending domain.
+- Server-only env is validated through `config/env.ts`; browser-safe env is exposed separately through `config/public-env.ts`.
+- Pino is the structured logger for Phase 1, with default redaction for secrets and high-risk PII.
+- Error pages use generic user-facing messages; server-side helpers own normalization and logging.
 
 ## Status Workflow
 

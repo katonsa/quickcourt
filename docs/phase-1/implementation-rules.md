@@ -16,6 +16,8 @@ These rules apply to all Phase 1 task specs. They are intended for both human de
 - Validate external input with Zod or equivalent schema validation.
 - Keep server-only logic out of client components.
 - Avoid leaking secrets or tokens to client-side code.
+- Import server secrets only through server-only modules such as `config/env.ts`.
+- Import browser-safe env only through `config/public-env.ts` and only expose `NEXT_PUBLIC_*` values.
 
 ## Database and Prisma
 
@@ -51,7 +53,9 @@ These rules apply to all Phase 1 task specs. They are intended for both human de
 ## Logging and Error Handling
 
 - Use structured logging for server-side logs.
+- Use Pino for Phase 1 server logging unless a later decision log entry changes the logging provider.
 - Do not log passwords, auth tokens, session cookies, reset tokens, verification tokens, or payment secrets.
+- Keep PII and secrets in structured log fields, not message strings, so logger redaction can apply.
 - Global error boundaries must avoid exposing internal stack traces to end users.
 - Server errors should include enough context for debugging without leaking secrets.
 
