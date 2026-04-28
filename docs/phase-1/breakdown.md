@@ -81,5 +81,6 @@ Before marking Phase 1 as `Done`, confirm:
 - P1-05 is `Done` based on access helper and route guard implementation, protected route placeholders, minimal access denial pages, optional optimistic `proxy.ts`, development/test guard seed fixtures, focused unit coverage, DB verification, typecheck, lint, tests, and build.
 - P1-06 Slice 0 is complete with canonical auth UI routes documented as `/sign-in` and `/sign-up`; `/login` and `/register` are documented as redirect aliases for the upcoming auth route implementation.
 - P1-06 Slice 1 has added client-safe auth validation schemas, small shared auth form primitives, and focused validation tests. Route pages and Better Auth client wiring remain in later slices.
+- P1-06 Slice 2 has added auth route skeletons for sign-in, sign-up, forgot password, reset password, email verification, and the `/login` and `/register` aliases. Better Auth client mutation wiring remains in later slices.
 - P1-07 has completed the local Vitest, foundation env tests, and DB integration harness slices. CI workflow work is deferred, so P1-07 remains `In Progress` until CI is added and verified.
 - Testing harness work can start before all Phase 1 behavior exists, but Phase 1 behavior coverage cannot be marked `Done` until the auth, access, and shell tasks it covers are implemented.
