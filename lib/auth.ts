@@ -4,12 +4,12 @@ import { betterAuth } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
 import { admin, organization } from "better-auth/plugins"
 
-import { env } from "@/config/env"
+import { env, isHostedAppEnv } from "@/config/env"
 import { db } from "@/lib/db"
 import { emailSender } from "@/lib/email/email-sender"
 import { logger } from "@/lib/logger"
 
-const hostedAppEnv = env.APP_ENV === "production" || env.APP_ENV === "staging"
+const hostedAppEnv = isHostedAppEnv(env.APP_ENV)
 
 export const auth = betterAuth({
   appName: "QuickCourt",

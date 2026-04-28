@@ -6,6 +6,7 @@ import { logger } from "@/lib/logger"
 
 import type { AuthEmailInput, EmailSender } from "./email-sender"
 import {
+  type AuthEmailTemplate,
   renderPasswordResetEmail,
   renderVerificationEmail,
 } from "./templates/auth-email-templates"
@@ -45,11 +46,7 @@ export class ResendEmailSender implements EmailSender {
   private async send(
     emailType: string,
     to: string,
-    template: {
-      subject: string
-      html: string
-      text: string
-    }
+    template: AuthEmailTemplate
   ): Promise<void> {
     const response = await this.resend.emails.send({
       from: this.options.from,

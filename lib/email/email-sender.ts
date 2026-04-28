@@ -1,6 +1,6 @@
 import "server-only"
 
-import { serverEnv, type Env } from "@/config/env"
+import { isHostedAppEnv, serverEnv, type Env } from "@/config/env"
 
 import { ConsoleEmailSender } from "./console-sender"
 import { ResendEmailSender } from "./resend-sender"
@@ -24,7 +24,7 @@ export function createEmailSender(env: Env = serverEnv): EmailSender {
     })
   }
 
-  if (env.APP_ENV === "production" || env.APP_ENV === "staging") {
+  if (isHostedAppEnv(env.APP_ENV)) {
     throw new Error(
       "Console email sender cannot be used in staging or production."
     )

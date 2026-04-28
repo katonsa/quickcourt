@@ -218,7 +218,7 @@ function requiresResendConfig(
   return isHostedAppEnv(appEnv) || emailProvider === "resend"
 }
 
-function isHostedAppEnv(appEnv: AppEnv): boolean {
+export function isHostedAppEnv(appEnv: AppEnv): boolean {
   return appEnv === "production" || appEnv === "staging"
 }
 

@@ -13,27 +13,30 @@ type AuthEmailTemplateInput = {
 export function renderVerificationEmail(
   input: AuthEmailTemplateInput
 ): AuthEmailTemplate {
-  const greeting = buildGreeting(input.name)
+  const { appName, name, url } = input
+  const greeting = buildGreeting(name)
+  const ignoreMessage =
+    "If you did not create this account, you can ignore this email."
 
   return {
-    subject: `Verify your ${input.appName} email`,
+    subject: `Verify your ${appName} email`,
     text: [
       greeting,
       "",
-      `Verify your email address for ${input.appName}:`,
-      input.url,
+      `Verify your email address for ${appName}:`,
+      url,
       "",
-      "If you did not create this account, you can ignore this email.",
+      ignoreMessage,
     ].join("\n"),
     html: renderLayout({
-      title: `Verify your ${input.appName} email`,
+      title: `Verify your ${appName} email`,
       body: [
         greeting,
-        `Verify your email address for ${input.appName}.`,
-        "If you did not create this account, you can ignore this email.",
+        `Verify your email address for ${appName}.`,
+        ignoreMessage,
       ],
       ctaLabel: "Verify email",
-      ctaUrl: input.url,
+      ctaUrl: url,
     }),
   }
 }
@@ -41,27 +44,30 @@ export function renderVerificationEmail(
 export function renderPasswordResetEmail(
   input: AuthEmailTemplateInput
 ): AuthEmailTemplate {
-  const greeting = buildGreeting(input.name)
+  const { appName, name, url } = input
+  const greeting = buildGreeting(name)
+  const ignoreMessage =
+    "If you did not request a password reset, you can ignore this email."
 
   return {
-    subject: `Reset your ${input.appName} password`,
+    subject: `Reset your ${appName} password`,
     text: [
       greeting,
       "",
-      `Reset your ${input.appName} password:`,
-      input.url,
+      `Reset your ${appName} password:`,
+      url,
       "",
-      "If you did not request a password reset, you can ignore this email.",
+      ignoreMessage,
     ].join("\n"),
     html: renderLayout({
-      title: `Reset your ${input.appName} password`,
+      title: `Reset your ${appName} password`,
       body: [
         greeting,
-        `Use the link below to reset your ${input.appName} password.`,
-        "If you did not request a password reset, you can ignore this email.",
+        `Use the link below to reset your ${appName} password.`,
+        ignoreMessage,
       ],
       ctaLabel: "Reset password",
-      ctaUrl: input.url,
+      ctaUrl: url,
     }),
   }
 }
