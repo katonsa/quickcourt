@@ -52,9 +52,21 @@ Format TypeScript and TSX files with Prettier.
 npm run test
 ```
 
-Placeholder test command until the Phase 1 testing harness is added. P1-07 will make this the unit-only test command and keep it DB-free.
+Run the Slice 1 Vitest unit harness once. This command uses `vitest.config.unit.ts`, runs in the Node environment, and stays DB-free.
 
-P1-07 also adds `npm run test:db:migrate` for test DB migration, `npm run test:integration` for DB-backed integration harness tests against `DATABASE_URL_TEST`, and `npm run test:all` for unit and DB integration tests together. The harness uses `vitest.config.ts` for shared settings, `vitest.config.unit.ts` for unit tests, and `vitest.config.integration.ts` for DB integration tests.
+```bash
+npm run test:watch
+```
+
+Run the Slice 1 Vitest unit harness in watch mode.
+
+```bash
+npm run test:coverage
+```
+
+Run the Slice 1 Vitest unit harness with V8 coverage.
+
+Later P1-07 slices add `npm run test:db:migrate` for test DB migration, `npm run test:integration` for DB-backed integration harness tests against `DATABASE_URL_TEST`, and `npm run test:all` for unit and DB integration tests together. Slice 1 uses `vitest.config.ts` for shared settings and `vitest.config.unit.ts` for unit tests; DB integration tests will use `vitest.config.integration.ts`.
 
 ### Database Commands
 

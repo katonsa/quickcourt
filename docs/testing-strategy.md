@@ -53,7 +53,7 @@ QuickCourt adalah **marketplace transaksional** — bug pada booking, payment, a
 
 ```bash
 # Unit & Integration
-npm i -D vitest @vitest/coverage-v8
+npm i -D vitest @vitest/coverage-v8 @vitejs/plugin-react jsdom @testing-library/react @testing-library/dom vite-tsconfig-paths
 
 # E2E
 npm i -D @playwright/test
