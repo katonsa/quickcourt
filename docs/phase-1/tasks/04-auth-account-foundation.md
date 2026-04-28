@@ -74,6 +74,152 @@ P1-04 owns the auth and email implementation. P1-08 owns the final behavior cove
 
 14. Document local development behavior.
 
+## Implementation Slices
+
+P1-04 is split into implementation slices so each change remains small, reviewable, and easy to commit independently. Do not mark P1-04 `Done` in `breakdown.md` until all acceptance criteria pass.
+
+### Slice 0 — Planning and Dependency Audit
+
+- Review this task spec, Phase 1 implementation rules, decision log, current Prisma schema, `lib/db.ts`, env config, logger, and error helpers.
+- Read official Better Auth documentation for the exact package/API conventions being installed.
+- Read relevant local Next.js docs in `node_modules/next/dist/docs/` before adding route handlers or server-only modules.
+- Identify required Better Auth and email dependencies before installation.
+
+Suggested commit: none unless intentional docs-only planning notes are added.
+
+### Slice 1 — Dependencies and Env Foundation
+
+- Install Better Auth and email provider dependencies after requesting network permission.
+- Add required auth/email env vars to `.env.example`.
+- Update `config/env.ts` validation.
+- Keep secrets server-only and do not expose non-`NEXT_PUBLIC_*` values through client config.
+
+Suggested commit:
+
+```text
+feat(auth): add auth dependencies and env foundation
+```
+
+### Slice 2 — Email Sender Abstraction
+
+- Add an `EmailSender` abstraction for verification and password reset emails.
+- Add development/test console sender fallback.
+- Add Resend sender for staging/production.
+- Ensure production fails fast when Resend config is missing.
+- Do not log verification/reset links in production.
+
+Suggested commit:
+
+```text
+feat(email): add transactional email sender abstraction
+```
+
+### Slice 3 — Better Auth Core Configuration
+
+- Configure Better Auth email/password auth.
+- Wire the Prisma/database adapter using current Prisma v7 and generated client conventions.
+- Configure Better Auth built-in `rateLimit`.
+- Add server-side auth module(s).
+- Do not add route guards, auth UI pages, or dashboard protection here; those belong to later tasks.
+
+Suggested commit:
+
+```text
+feat(auth): configure Better Auth core
+```
+
+### Slice 4 — Better Auth Route Handler
+
+- Add the auth API route under the root `app/` directory.
+- Follow Next.js 16 App Router route handler conventions from local docs.
+- Keep route handler implementation server-only.
+- Verify the route path matches Better Auth client/server expectations.
+
+Suggested commit:
+
+```text
+feat(auth): expose Better Auth route handler
+```
+
+### Slice 5 — Admin and Organization Plugins
+
+- Enable Better Auth Admin Plugin.
+- Enable Better Auth Organization Plugin.
+- Preserve role boundaries:
+  - Super Admin uses Better Auth admin role, expected as `User.role === "admin"`.
+  - Venue owner/staff access is organization membership based, not `User.role`.
+- Do not implement organization creation UI, owner invitation UI, or staff management UI.
+
+Suggested commit:
+
+```text
+feat(auth): enable admin and organization plugins
+```
+
+### Slice 6 — Admin Bootstrap Support
+
+- Document the admin bootstrap path.
+- Add an idempotent script/command if appropriate:
+  - the user must already exist through Better Auth;
+  - the script promotes a configured email/user to `User.role = "admin"`.
+- Recommended env name: `ADMIN_BOOTSTRAP_EMAIL`.
+- Do not raw-seed Better Auth password credentials.
+
+Suggested commit:
+
+```text
+feat(auth): add admin bootstrap support
+```
+
+### Slice 7 — Server Auth Helpers
+
+- Add minimal helpers needed by P1-05:
+  - get current session/user;
+  - require authenticated user;
+  - identify admin role;
+  - expose organization membership/session shape if available.
+- Keep authorization policy minimal. Full route guards belong to P1-05.
+
+Suggested commit:
+
+```text
+feat(auth): add server auth helpers
+```
+
+### Slice 8 — Documentation and Status
+
+- Update this task doc with implementation notes if the final implementation differs from the plan.
+- Update `decision-log.md` for choices that affect architecture, security, or operations.
+- Update `breakdown.md` only after acceptance criteria and verification pass.
+
+Suggested commit:
+
+```text
+docs(auth): document P1-04 auth foundation
+```
+
+### Slice 9 — Verification
+
+Run after each relevant slice where possible:
+
+```bash
+npm run typecheck
+npm run lint
+```
+
+Run final verification:
+
+```bash
+npm run db:migrate
+npm run db:verify-constraints
+npm run db:seed
+npm run typecheck
+npm run lint
+npm run build
+```
+
+In restricted sandboxes, follow `AGENTS.md` and request permission before package installation, build, or database-backed commands.
+
 ## Files / Modules
 
 Likely touched:
