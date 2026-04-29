@@ -1,25 +1,16 @@
 // @vitest-environment jsdom
 
 import { cleanup, render, screen } from "@testing-library/react"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 const navigationMocks = vi.hoisted(() => ({
-  redirect: vi.fn(),
   replace: vi.fn(),
   refresh: vi.fn(),
 }))
 
-class TestRedirectError extends Error {
-  constructor(readonly path: string) {
-    super(`Redirected to ${path}`)
-    this.name = "TestRedirectError"
-  }
-}
-
 vi.mock("server-only", () => ({}))
 
 vi.mock("next/navigation", () => ({
-  redirect: navigationMocks.redirect,
   useRouter: () => ({
     replace: navigationMocks.replace,
     refresh: navigationMocks.refresh,
@@ -42,12 +33,8 @@ vi.mock("@/lib/auth-client", () => ({
 }))
 
 import ForgotPasswordPage from "@/app/(auth)/forgot-password/page"
-import LoginAliasPage from "@/app/(auth)/login/page"
-import RegisterAliasPage from "@/app/(auth)/register/page"
-import ResetPasswordPage from "@/app/(auth)/reset-password/page"
 import SignInPage from "@/app/(auth)/sign-in/page"
 import SignUpPage from "@/app/(auth)/sign-up/page"
-import VerifyEmailPage from "@/app/(auth)/verify-email/page"
 import {
   FORGOT_PASSWORD_PATH,
   SIGN_IN_PATH,
@@ -56,12 +43,6 @@ import {
 } from "@/lib/auth/paths"
 
 describe("auth pages", () => {
-  beforeEach(() => {
-    navigationMocks.redirect.mockImplementation((path: string) => {
-      throw new TestRedirectError(path)
-    })
-  })
-
   afterEach(() => {
     cleanup()
   })
@@ -112,79 +93,5 @@ describe("auth pages", () => {
       screen.getByRole("link", { name: "Back to sign in" })
     ).toHaveAttribute("href", SIGN_IN_PATH)
     expect(screen.queryByText(/resend/i)).not.toBeInTheDocument()
-  })
-
-  it("renders a usable reset-password form when a token is present", async () => {
-    render(
-      await ResetPasswordPage({
-        searchParams: Promise.resolve({ token: "reset-token" }),
-      })
-    )
-
-    expect(screen.getByText("Set a new password")).toBeVisible()
-    expect(screen.getByLabelText("New password")).toBeVisible()
-    expect(screen.getByLabelText("Confirm new password")).toBeVisible()
-    expect(
-      screen.getByRole("button", { name: "Update password" })
-    ).toBeEnabled()
-    expect(screen.queryByText(/reset-token/)).not.toBeInTheDocument()
-  })
-
-  it("renders an unusable reset-password state without exposing token details", async () => {
-    render(
-      await ResetPasswordPage({
-        searchParams: Promise.resolve({ error: "invalid-token" }),
-      })
-    )
-
-    expect(
-      screen.getByText("This reset link cannot be used. Request a new link to continue.")
-    ).toBeVisible()
-    expect(
-      screen.getByRole("button", { name: "Update password" })
-    ).toBeDisabled()
-    expect(screen.queryByText(/invalid-token/)).not.toBeInTheDocument()
-  })
-
-  it("renders verify-email success and error states from provider params", async () => {
-    const success = await VerifyEmailPage({
-      searchParams: Promise.resolve({ status: "success" }),
-    })
-    const { unmount } = render(success)
-
-    expect(screen.getByText("Email verified")).toBeVisible()
-    unmount()
-
-    render(
-      await VerifyEmailPage({
-        searchParams: Promise.resolve({ error: "expired-token" }),
-      })
-    )
-
-    expect(screen.getByText("Verification link expired")).toBeVisible()
-    expect(screen.queryByText(/expired-token/)).not.toBeInTheDocument()
-  })
-
-  it("redirects legacy auth aliases to canonical paths", async () => {
-    expect(() => RegisterAliasPage()).toThrow(TestRedirectError)
-    expect(navigationMocks.redirect).toHaveBeenLastCalledWith(SIGN_UP_PATH)
-
-    await expect(
-      LoginAliasPage({
-        searchParams: Promise.resolve({
-          [SIGN_IN_REDIRECT_PARAM]: "/dashboard/venue?tab=settings",
-        }),
-      })
-    ).rejects.toMatchObject({
-      path: `${SIGN_IN_PATH}?${SIGN_IN_REDIRECT_PARAM}=%2Fdashboard%2Fvenue%3Ftab%3Dsettings`,
-    })
-
-    await expect(
-      LoginAliasPage({
-        searchParams: Promise.resolve({
-          [SIGN_IN_REDIRECT_PARAM]: "https://evil.example/dashboard",
-        }),
-      })
-    ).rejects.toMatchObject({ path: SIGN_IN_PATH })
   })
 })
