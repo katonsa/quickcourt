@@ -61,6 +61,25 @@ test.describe("public auth routes", () => {
     ).toBeDisabled()
   })
 
+  test("renders an unusable reset password state from a provider error", async ({
+    page,
+  }) => {
+    await page.goto("/reset-password?error=invalid-token")
+
+    await expect(page.getByText("Set a new password")).toBeVisible()
+    await expect(
+      page.getByText(
+        "This reset link cannot be used. Request a new link to continue."
+      )
+    ).toBeVisible()
+    await expect(
+      page.getByRole("button", { name: "Update password" })
+    ).toBeDisabled()
+    await expect(page.getByText("invalid-token", { exact: true })).toHaveCount(
+      0
+    )
+  })
+
   test("renders verify email success state from provider status", async ({
     page,
   }) => {

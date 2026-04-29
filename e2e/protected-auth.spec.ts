@@ -63,6 +63,20 @@ test.describe("protected auth routes", () => {
     ).toBeVisible()
   })
 
+  test("denies admin route access to a verified regular user", async ({
+    page,
+    request,
+  }) => {
+    const user = await createVerifiedUser(request, { role: "user" })
+
+    await signInThroughUi(page, user, "/admin")
+
+    await expect(page).toHaveURL(/\/forbidden$/)
+    await expect(
+      page.getByRole("heading", { name: "This page cannot be opened" })
+    ).toBeVisible()
+  })
+
   test("allows a verified venue owner to open the venue dashboard", async ({
     page,
     request,
