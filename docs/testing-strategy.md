@@ -1,916 +1,370 @@
 # Testing Strategy
 
 > [!NOTE]
-> Dokumen ini menjabarkan **strategi, framework, dan panduan testing** Quickcourt MVP.
+> Dokumen ini menjabarkan strategi, framework, dan panduan testing QuickCourt MVP.
 > Untuk spesifikasi teknis, lihat [Technical Spec](./technical-spec.md).
 > Untuk roadmap dan milestone, lihat [Project Plan](./project-plan.md).
 
 ---
 
-## 1. Prinsip Testing
+## 1. Principles
 
-### 1.1 Filosofi
+QuickCourt is a transactional marketplace. Bugs in booking, payment, ledger, or access control can affect money, operational trust, and user data. Tests should prioritize critical behavior over high coverage numbers.
 
-QuickCourt adalah **marketplace transaksional** — bug pada booking, payment, atau ledger langsung berdampak pada uang dan kepercayaan user. Testing harus **fokus pada critical path** terlebih dahulu, bukan mengejar coverage angka tinggi.
+Core rules:
 
-### 1.2 Prinsip Utama
-
-1. **Critical path first** — Test booking flow, payment webhook, dan ledger sebelum yang lain.
-2. **Test behavior, bukan implementation** — Validasi output dan side effects, bukan internal function calls.
-3. **Database-backed tests** — Service layer test harus menggunakan real database (test DB), bukan mock Prisma.
-4. **Pisahkan unit dan integration** — `npm run test` harus tetap DB-free; DB-backed tests berjalan lewat `npm run test:integration`.
-5. **Fast feedback loop** — Unit test harus cepat (<10 detik). Integration test boleh lebih lambat tapi tetap terkontrol.
-6. **Idempotency harus dibuktikan** — Webhook dan cron job harus ditest dengan repeated execution.
+1. Prefer user-visible behavior over implementation details.
+2. Keep `npm run test` fast and DB-free.
+3. Use real PostgreSQL for DB-backed integration and protected E2E tests.
+4. Keep public E2E fast and DB-free.
+5. Do not weaken assertions to make tests pass.
+6. Avoid large snapshots and snapshot-only tests.
+7. Avoid arbitrary sleeps, `waitForTimeout`, manual polling, and retry-based flakiness fixes.
+8. Use accessible queries before `data-testid`.
+9. Keep mocks minimal and local; do not mock the component under test.
 
 ---
 
-## 2. Framework & Tooling
+## 2. Testing Layers
 
-### Current Repository Status
+| Layer | Tools | Purpose |
+| --- | --- | --- |
+| Unit tests | Vitest | Pure logic, validators, utilities, formatting, policy functions |
+| Component tests | Vitest + React Testing Library + `@testing-library/jest-dom` | Synchronous React component behavior and DOM assertions |
+| Integration tests | Vitest + real PostgreSQL test DB | Service/database behavior, constraints, transactions, auth/organization data rules |
+| Public E2E | Playwright | Browser-level public route/query behavior without DB state |
+| Protected E2E | Playwright + PostgreSQL test DB | Real browser/session/protected-route behavior using `DATABASE_URL_TEST` |
 
-Implemented today:
+### What Belongs In Vitest
 
-- Unit tests use Vitest through `vitest.config.unit.ts`.
-- Integration tests use Vitest through `vitest.config.integration.ts` and a real PostgreSQL test database.
-- `npm run test` is DB-free and excludes `*.integration.test.ts`.
-- `npm run test:db:migrate` applies migrations to `DATABASE_URL_TEST`.
-- Phase 1 behavior coverage exists for auth config, email sender/template behavior, access helpers, route guards, auth pages, protected shells, and DB-backed organization membership behavior.
+- Pure functions and validation.
+- Utility behavior, formatting, policy evaluation, state transitions.
+- Synchronous React components using React Testing Library.
+- DB-backed integration tests that intentionally use `DATABASE_URL_TEST`.
 
-Deferred:
+### What Should Not Be Forced Into Vitest
 
-- A committed GitHub Actions workflow is deferred outside Phase 1 by D-P1-017.
-- Playwright/E2E setup is a later hardening/release-readiness layer unless a future task enables it earlier.
-- Booking, payment, webhook, ledger, refund, withdrawal, and staff operation tests are owned by later implementation milestones.
+- Async Server Components.
+- Async App Router pages.
+- Async App Router layouts.
+- Redirect/session behavior that depends on real Next.js routing and browser state.
+- Auth cookie/session flows.
 
-### 2.1 Pilihan Framework
+Use Playwright for those surfaces instead. This keeps Vitest focused and avoids unsupported App Router patterns in unit tests.
 
-| Layer                       | Tool                         | Alasan                                                                  |
-| --------------------------- | ---------------------------- | ----------------------------------------------------------------------- |
-| **Unit & Integration Test** | **Vitest**                   | Native ESM, fast, compatible dengan Next.js ecosystem, built-in mocking |
-| **E2E Test**                | **Playwright**               | Multi-browser, reliable, auto-wait, native Next.js integration          |
-| **Database Test**           | **Vitest + Test DB**         | Real PostgreSQL via Docker, Prisma migrate pada test DB                 |
-| **API/Webhook Test**        | **Vitest + supertest/fetch** | Test API routes langsung tanpa browser                                  |
+---
 
-### 2.2 Kenapa Vitest, Bukan Jest?
+## 3. Commands
 
-- **Native ESM support** — Next.js App Router dan Prisma v7 menggunakan ESM. Jest butuh transformasi tambahan.
-- **Faster execution** — Vitest menggunakan Vite dev server, lebih cepat untuk project TypeScript.
-- **Compatible API** — API mirip Jest (`describe`, `it`, `expect`), migrasi mudah jika perlu.
-- **Built-in features** — Coverage, mocking, snapshot, concurrent test, tanpa banyak plugin.
+| Command | Purpose |
+| --- | --- |
+| `npm run test` | Runs Vitest unit/component tests with `vitest.config.unit.ts`. DB-free. |
+| `npm run test:watch` | Runs unit/component tests in watch mode. |
+| `npm run test:coverage` | Runs unit/component coverage. |
+| `npm run test:db:up` | Starts the PostgreSQL test database. |
+| `npm run test:db:migrate` | Applies migrations to the test database. |
+| `npm run test:integration` | Runs DB-backed Vitest integration tests. |
+| `npm run test:e2e` | Runs public Playwright E2E tests only. DB-free. Currently targets `e2e/public-auth.spec.ts`. |
+| `npm run test:e2e:protected` | Runs protected DB-backed Playwright E2E through `scripts/run-protected-e2e.ts`. Requires `DATABASE_URL_TEST`. |
+| `npm run test:all` | Runs unit tests, then integration tests. It does not run E2E. |
 
-### 2.3 Kenapa Playwright untuk E2E?
-
-- **Auto-wait** — Tidak perlu manual sleep/waitFor, mengurangi flaky test.
-- **Multi-browser** — Chromium, Firefox, WebKit dalam satu config.
-- **Next.js native support** — `webServer` config bisa auto-start dev server.
-- **Trace viewer** — Debug failed test dengan screenshot, network log, dan DOM snapshot.
-
-### 2.4 Dependencies
+Protected E2E local flow:
 
 ```bash
-# Unit & Integration
-npm i -D vitest @vitest/coverage-v8 @vitejs/plugin-react jsdom @testing-library/react @testing-library/dom vite-tsconfig-paths
+npm run test:db:up
+npm run test:db:migrate
+npm run test:e2e:protected
+```
 
-# E2E
-npm i -D @playwright/test
+Fresh machines or CI may need Playwright browsers installed:
+
+```bash
+npx playwright install chromium
+```
+
+Linux CI may need browser system dependencies too:
+
+```bash
 npx playwright install --with-deps chromium
-
-# Utilities
-# dotenv-cli boleh ditambahkan jika project memilih .env.test file loading eksplisit.
 ```
 
 ---
 
-## 3. Test Layers & Scope
+## 4. Vitest Guidance
 
-### 3.1 Piramida Test QuickCourt
+Unit/component tests use `vitest.config.unit.ts`.
 
-```
-        ┌─────────┐
-        │  E2E    │  ← Sedikit, critical user journeys
-        │ (5-10)  │
-       ─┼─────────┼─
-       │Integration│  ← Service layer + DB + API routes
-       │ (30-50)   │
-      ─┼───────────┼─
-      │   Unit      │  ← Pure functions, utils, validators
-      │  (50-100)   │
-      └─────────────┘
-```
+- `npm run test` must remain DB-free.
+- `e2e/**` is excluded so Vitest does not collect Playwright specs.
+- `*.integration.test.ts` is excluded from unit tests.
+- Use `@testing-library/jest-dom` matchers for explicit DOM assertions.
+- Keep module mocks local to the test file unless there is a clear shared helper.
+- Do not mock the component under test.
+- Avoid asserting private implementation details such as internal hook calls when user-visible output or effects are available.
 
-### 3.2 Apa yang Di-test di Setiap Layer
+Integration tests use `vitest.config.integration.ts`.
 
-#### Unit Test — Pure Logic
-
-Target: functions tanpa side effects atau dependency external.
-
-| Area                  | Contoh                                          |
-| --------------------- | ----------------------------------------------- |
-| **Validators**        | Zod schema parsing, custom validation rules     |
-| **Formatters**        | Currency formatting (BigInt → Rupiah string)    |
-| **Calculators**       | Harga slot, komisi, refund amount               |
-| **Code generators**   | Booking code (`QC-` + nanoid), idempotency keys |
-| **State machine**     | Booking status transitions (valid/invalid)      |
-| **Slot generation**   | Time window generation dari operating hours     |
-| **Policy evaluation** | Cancellation policy rules evaluation            |
-
-#### Integration Test — Service Layer + Database
-
-Target: service functions yang berinteraksi dengan database.
-
-| Area                     | Contoh                                                      |
-| ------------------------ | ----------------------------------------------------------- |
-| **Booking service**      | Create booking → cek slot tersimpan, status benar           |
-| **Anti double-booking**  | 2 concurrent booking pada slot sama → satu gagal            |
-| **Webhook processing**   | Simulate webhook → booking status updated, ledger created   |
-| **Idempotent webhook**   | Same webhook 2x → processed sekali                          |
-| **Payment retry**        | Failed/pending payment → lanjut bayar/retry sebelum expiry  |
-| **Late webhook guard**   | Webhook attempt lama/expired → ignored, ledger tidak dibuat |
-| **Booking expiry**       | Expired booking → slot released                             |
-| **Refund operation**     | Refund success/failed → status dan ledger benar             |
-| **Withdrawal operation** | Withdrawal paid/failed → saldo dan ledger benar             |
-| **Ledger calculation**   | Payment → gross, commission, net tercatat benar             |
-| **Permission check**     | Staff tanpa permission → aksi ditolak                       |
-| **Availability**         | Block + booking + operating hours → slot calculation benar  |
-
-#### E2E Test — Critical User Journeys
-
-Target: full user flow dari browser.
-
-| Journey                  | Steps                                                                                 |
-| ------------------------ | ------------------------------------------------------------------------------------- |
-| **Customer booking**     | Login → search → select venue → select slot → checkout → payment callback → confirmed |
-| **Venue onboarding**     | Accept invite → fill venue → submit → admin approve → visible di marketplace          |
-| **Walk-in booking**      | Staff login → create manual booking → confirmed                                       |
-| **Booking cancellation** | Customer cancel → refund calculated → status updated                                  |
-| **Payment retry**        | Customer pending payment → close page → return → continue payment                     |
-| **Staff management**     | Owner invite/revoke staff → permission enforced                                       |
-| **Support basic**        | Customer opens booking → submit support request                                       |
-| **Admin approval**       | Admin login → review venue → approve → venue active                                   |
+- Integration tests are intentionally DB-backed.
+- They must use the test database via `DATABASE_URL_TEST`.
+- They should clean only records they create.
+- They should prove database behavior that cannot be trusted to mocks, such as constraints, transactions, access relationships, and idempotency.
 
 ---
 
-## 4. Critical Path: Test Scenarios Detail
+## 5. React Testing Library Guidance
 
-### 4.1 Anti Double-Booking (HIGHEST PRIORITY)
+Use React Testing Library for synchronous component behavior.
 
-Ini adalah **risiko terbesar** — double-booking merusak trust venue dan customer.
+Preferred query order:
 
-```typescript
-// Contoh test scenario
-describe("Anti Double-Booking", () => {
-  it("menolak booking pada slot yang sudah terisi", async () => {
-    // Arrange: buat booking confirmed pada Court A, 08:00-09:00
-    // Act: buat booking baru pada Court A, 08:00-09:00
-    // Assert: booking kedua ditolak dengan error yang jelas
-  })
+1. `getByRole` with accessible name.
+2. `getByLabelText`.
+3. `getByText` for stable user-facing copy.
+4. `data-testid` only when no accessible query represents the behavior.
 
-  it("menolak booking yang overlap sebagian", async () => {
-    // Arrange: booking confirmed 08:00-10:00
-    // Act: booking baru 09:00-11:00
-    // Assert: ditolak (overlap 09:00-10:00)
-  })
+Good RTL targets:
 
-  it("mengizinkan booking pada court berbeda di waktu sama", async () => {
-    // Arrange: booking pada Court A, 08:00-09:00
-    // Act: booking pada Court B, 08:00-09:00
-    // Assert: berhasil
-  })
+- Form field presence and labels.
+- Buttons and links with stable accessible names.
+- Error/success states rendered by a component.
+- Component-level routing links.
+- Stable shell/navigation rendering.
 
-  it("mengizinkan booking setelah slot di-cancel", async () => {
-    // Arrange: booking pada Court A 08:00 → cancelled
-    // Act: booking baru pada Court A 08:00
-    // Assert: berhasil
-  })
+Avoid RTL for:
 
-  it("DB constraint menangkap race condition", async () => {
-    // Arrange: 2 concurrent booking requests pada slot sama
-    // Act: jalankan bersamaan (Promise.all)
-    // Assert: tepat satu berhasil, satu gagal
-  })
-})
-```
-
-### 4.2 Payment Webhook Idempotency
-
-```typescript
-describe("Webhook Processing", () => {
-  it("memproses webhook payment success → booking confirmed", async () => {
-    // Arrange: booking pending_payment
-    // Act: kirim webhook payment.paid
-    // Assert: booking.status = confirmed, ledger entry created
-  })
-
-  it("webhook yang sama 2x → hanya diproses sekali", async () => {
-    // Act: kirim webhook identical 2x
-    // Assert: processedAt hanya di-set sekali, ledger entry hanya 1
-  })
-
-  it("menolak webhook dengan callback token salah", async () => {
-    // Act: POST webhook tanpa/token salah
-    // Assert: 401 Unauthorized
-  })
-
-  it("webhook expired → booking expired, slot released", async () => {
-    // Act: kirim webhook payment.expired
-    // Assert: booking.status = expired, slot.status = cancelled
-  })
-})
-```
-
-### 4.3 Ledger Accuracy
-
-```typescript
-describe("Ledger", () => {
-  it("booking confirmed → ledger entries lengkap", async () => {
-    // Assert: gross credit + commission debit + fee debit = net
-    // Assert: BigInt arithmetic, bukan float
-  })
-
-  it("refund → ledger debit tercatat", async () => {
-    // Assert: refund debit entry created
-    // Assert: venue balance berkurang
-  })
-
-  it("venue balance = sum of all ledger entries", async () => {
-    // Buat beberapa booking + 1 refund
-    // Assert: calculated balance === sum(credits) - sum(debits)
-  })
-})
-```
-
-### 4.4 Booking Expiry
-
-```typescript
-describe("Booking Expiry", () => {
-  it("booking expired setelah 30 menit tanpa payment", async () => {
-    // Arrange: booking pending_payment, createdAt = 31 menit lalu
-    // Act: jalankan expiry sweep
-    // Assert: status = expired, slots released
-  })
-
-  it("booking tidak expired jika belum 30 menit", async () => {
-    // Arrange: booking pending_payment, createdAt = 25 menit lalu
-    // Act: jalankan expiry sweep
-    // Assert: status tetap pending_payment
-  })
-
-  it("expiry sweep idempotent", async () => {
-    // Act: jalankan sweep 2x
-    // Assert: tidak ada error, status tetap expired
-  })
-})
-```
+- Full App Router redirect behavior.
+- Async Server Component/page/layout invocation.
+- Auth session and cookie persistence.
+- Browser navigation flows.
 
 ---
 
-### 4.5 Payment Failure & Retry
+## 6. Playwright E2E
 
-```typescript
-describe("Payment Retry", () => {
-  it("menampilkan checkoutUrl existing selama invoice masih aktif", async () => {
-    // Arrange: booking pending_payment dengan payment pending
-    // Act: customer membuka detail booking
-    // Assert: response berisi checkoutUrl dan expiry countdown
-  })
+Playwright is configured in `playwright.config.ts`.
 
-  it("mengizinkan retry jika payment failed tetapi booking belum expired", async () => {
-    // Arrange: booking pending_payment, payment failed, expiresAt masih future
-    // Act: create retry payment attempt
-    // Assert: new/current payment pending, amount sama dengan booking snapshot
-  })
+- `testDir` is `./e2e`.
+- Chromium is the configured browser project.
+- The dev server is started with `npm run dev`.
+- Screenshots are captured on failure.
+- Traces are captured on first retry.
+- CI retries are enabled.
 
-  it("mengabaikan webhook sukses dari payment attempt lama", async () => {
-    // Arrange: booking punya payment attempt baru; attempt lama terlambat paid
-    // Act: webhook paid untuk attempt lama
-    // Assert: webhook stored as ignored/failed, booking tidak confirmed, ledger tidak dibuat
-  })
-})
-```
+Use Playwright for browser-level behavior:
 
-### 4.6 Refund & Withdrawal Operations
+- App Router route behavior.
+- Redirects and query sanitization.
+- Auth/session behavior.
+- Protected route access.
+- Async Server Component/page/layout behavior.
 
-```typescript
-describe("Refund and Withdrawal", () => {
-  it("refund sukses membuat ledger refund_debit sekali", async () => {
-    // Arrange: booking paid cancelled eligible refund
-    // Act: process refund succeeded twice
-    // Assert: Refund.status = succeeded, ledger refund_debit hanya satu
-  })
+Do not use arbitrary sleeps or `waitForTimeout`. Rely on Playwright's auto-waiting and web-first assertions.
 
-  it("refund gagal tidak membuat ledger debit", async () => {
-    // Arrange: refund processing
-    // Act: gateway returns failed
-    // Assert: Refund.status = failed, VenueLedgerEntry refund_debit tidak ada
-  })
+### Public E2E
 
-  it("withdrawal paid mengurangi available balance secara idempotent", async () => {
-    // Arrange: venue balance available
-    // Act: process withdrawal paid webhook/job twice
-    // Assert: withdrawal_debit hanya satu, balance benar
-  })
-})
-```
+Public E2E is DB-free and currently lives in `e2e/public-auth.spec.ts`.
 
-### 4.7 Staff, Admin Ops, and Legal Consent
+Current coverage:
 
-```typescript
-describe("Operational MVP", () => {
-  it("staff revoked tidak dapat mengakses branch venue", async () => {
-    // Arrange: staff punya akses lalu direvoke
-    // Act: staff request venue booking management
-    // Assert: 403 Forbidden
-  })
+- `/register` redirects to `/sign-up`.
+- `/login` alias preserves safe redirect targets.
+- External redirect targets are sanitized.
+- Reset-password token, missing-token, and invalid-token states.
+- Verify-email success/error states.
 
-  it("manual adjustment membutuhkan reason dan audit log", async () => {
-    // Arrange: super admin
-    // Act: create adjustment tanpa reason lalu dengan reason
-    // Assert: tanpa reason ditolak; dengan reason membuat ledger + audit
-  })
+Rules:
 
-  it("checkout tanpa policy consent ditolak", async () => {
-    // Act: submit checkout tanpa consent
-    // Assert: validation error dan booking tidak dibuat
-  })
-})
-```
+- Keep public E2E DB-free.
+- Prefer public route/query behavior that can run without fixtures.
+- Keep these tests fast and stable.
 
-## 5. Konfigurasi
+### Protected E2E
 
-### 5.1 Vitest Config
+Protected E2E is DB-backed and currently lives in `e2e/protected-auth.spec.ts`.
 
-```typescript
-// vitest.config.ts
-import { defineConfig } from "vitest/config"
-import path from "path"
+Current coverage:
 
-export default defineConfig({
-  test: {
-    globals: true,
-    environment: "node",
-    // Isolate test files untuk menghindari state leakage
-    pool: "forks",
-  },
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "."),
-    },
-  },
-})
-```
+- Unauthenticated `/dashboard` redirects to sign-in.
+- Verified regular user can access `/dashboard`.
+- Verified admin can access `/admin`.
+- Verified regular user is denied `/admin`.
+- Verified venue owner can access `/dashboard/venue`.
+- Admin without organization membership is denied `/dashboard/venue`.
 
-```typescript
-// vitest.config.unit.ts
-import { defineConfig, mergeConfig } from "vitest/config"
-import baseConfig from "./vitest.config"
+Rules:
 
-export default mergeConfig(
-  baseConfig,
-  defineConfig({
-    test: {
-      include: ["**/*.test.ts", "**/*.spec.ts"],
-      exclude: ["e2e/**", "**/*.integration.test.ts"],
-      setupFiles: ["./test/setup.ts"],
-      coverage: {
-        provider: "v8",
-        include: ["app/**", "components/**", "config/**", "lib/**"],
-        exclude: ["test/**", "**/*.d.ts", "**/*.integration.test.ts"],
-      },
-    },
-  })
-)
-```
+- Use `npm run test:e2e:protected`.
+- Keep protected E2E using `DATABASE_URL_TEST`.
+- Do not run protected E2E against dev or production databases.
+- Keep protected E2E serial unless test data isolation is proven safe.
+- Create only test-owned records.
+- Clean only test-owned records.
 
-```typescript
-// vitest.config.integration.ts
-import { defineConfig, mergeConfig } from "vitest/config"
-import baseConfig from "./vitest.config"
+---
 
-export default mergeConfig(
-  baseConfig,
-  defineConfig({
-    test: {
-      include: ["**/*.integration.test.ts"],
-      setupFiles: ["./test/integration/setup.ts"],
-      testTimeout: 15_000,
-      hookTimeout: 15_000,
-    },
-  })
-)
-```
+## 7. Protected E2E Database Rules
 
-Unit dan integration tests memakai shared base config, tetapi entrypoint-nya terpisah. Jangan memuat Prisma/test DB dari `test/setup.ts` global, karena file itu ikut dipakai unit tests.
+`scripts/run-protected-e2e.ts` owns protected E2E environment setup.
 
-### 5.2 Playwright Config
+It:
 
-```typescript
-// playwright.config.ts
-import { defineConfig, devices } from "@playwright/test"
+- Requires `DATABASE_URL_TEST`.
+- Validates that the URL is PostgreSQL.
+- Rejects `DATABASE_URL_TEST` when it points to the same database as `DATABASE_URL`.
+- Runs Playwright against `e2e/protected-auth.spec.ts` with `--workers=1`.
+- Starts the app with test DB environment variables.
 
-export default defineConfig({
-  testDir: "./e2e",
-  timeout: 30_000,
-  retries: process.env.CI ? 2 : 0,
-  workers: 1, // Sequential — shared database state
-  use: {
-    baseURL: "http://localhost:3000",
-    trace: "on-first-retry",
-    screenshot: "only-on-failure",
-  },
-  projects: [
-    {
-      name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
-    },
-  ],
-  webServer: {
-    command: "npm run dev",
-    port: 3000,
-    reuseExistingServer: !process.env.CI,
-  },
-})
-```
+Database setup remains explicit. Do not hide migrations in Playwright global setup.
 
-### 5.3 Test Database Setup
-
-```typescript
-// test/setup.ts
-import { afterEach, vi } from "vitest"
-
-afterEach(() => {
-  vi.restoreAllMocks()
-})
-```
-
-Integration setup memvalidasi env sebelum DB-backed tests berjalan:
-
-```typescript
-// test/integration/setup.ts
-if (!process.env.DATABASE_URL_TEST) {
-  throw new Error("DATABASE_URL_TEST is required for DB integration tests")
-}
-
-if (process.env.DATABASE_URL_TEST === process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL_TEST must not equal DATABASE_URL")
-}
-```
-
-DB helper untuk integration tests dipisah agar unit tests tidak membutuhkan PostgreSQL:
-
-```typescript
-// test/integration/db.ts
-import { PrismaPg } from "@prisma/adapter-pg"
-import { PrismaClient } from "@/generated/prisma/client"
-
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL_TEST!,
-})
-
-export const prisma = new PrismaClient({
-  adapter,
-})
-```
-
-Minimal P1-07 DB integration smoke test cukup membuktikan harness, koneksi test DB, dan migrated schema. Jangan truncate/reset/seed database development dari integration tests.
-
-```typescript
-// test/integration/db.integration.test.ts
-import { afterAll, describe, expect, it } from "vitest"
-import { prisma } from "./db"
-
-describe("DB integration harness", () => {
-  afterAll(async () => {
-    await prisma.$disconnect()
-  })
-
-  it("connects to the migrated test database", async () => {
-    const result = await prisma.$queryRaw<{ ok: number }[]>`SELECT 1 AS ok`
-
-    expect(result[0]?.ok).toBe(1)
-  })
-})
-```
-
-### 5.4 Environment
+Required local setup:
 
 ```bash
-# .env.test
-DATABASE_URL_TEST="postgresql://postgres:postgres@localhost:5433/quickcourt_test"
-BETTER_AUTH_SECRET="test-secret-do-not-use-in-prod"
-XENDIT_CALLBACK_TOKEN="test-callback-token"
+npm run test:db:up
+npm run test:db:migrate
+npm run test:e2e:protected
 ```
 
-`DATABASE_URL` remains the active app datasource. `DATABASE_URL_TEST` is the canonical DB integration test database URL introduced by P1-03 and required by the P1-07 DB integration harness. Do not persist `DATABASE_URL` and `DATABASE_URL_TEST` with the same value because `config/env.ts` rejects that configuration. Test scripts that need Prisma's active datasource should map `DATABASE_URL` to `DATABASE_URL_TEST` only for that subprocess.
+Cleanup guidance:
 
-### 5.5 Docker Compose untuk Test DB
-
-```yaml
-# docker-compose.test.yml
-services:
-  postgres-test:
-    image: postgres:17-alpine
-    ports:
-      - "5433:5432"
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: quickcourt_test
-    tmpfs:
-      - /var/lib/postgresql/data # In-memory untuk speed
-```
+- Track IDs for records created by E2E tests.
+- Delete created organizations first so organization-owned venue/member records cascade.
+- Delete created users after organizations.
+- Delete related verification rows by created email.
+- Do not truncate or reset the whole test DB from E2E cleanup.
 
 ---
 
-## 6. NPM Scripts
+## 8. Critical Domain Scenarios
 
-```jsonc
-// package.json (scripts section)
-{
-  "scripts": {
-    "test": "vitest run --config vitest.config.unit.ts",
-    "test:watch": "vitest --config vitest.config.unit.ts",
-    "test:coverage": "vitest run --config vitest.config.unit.ts --coverage",
-    "test:integration": "vitest run --config vitest.config.integration.ts",
-    "test:all": "npm run test && npm run test:integration",
-    "test:db:up": "docker compose -f docker-compose.test.yml up -d postgres-test",
-    "test:db:down": "docker compose -f docker-compose.test.yml down",
-    "test:db:migrate": "tsx scripts/test-db-migrate.ts",
-  },
-}
-```
+The following areas remain the highest-value DB integration or E2E targets as the product grows.
 
-`test`, `test:watch`, dan `test:coverage` memakai unit config. `test:db:migrate` menyiapkan schema test DB dengan mapping subprocess-local dari `DATABASE_URL` ke `DATABASE_URL_TEST`. `test:integration` memakai integration config, hanya memilih `*.integration.test.ts`, dan harus gagal jelas jika `DATABASE_URL_TEST` belum tersedia. `test:all` menjalankan unit tests lalu integration tests; migration tetap dijalankan eksplisit lewat `test:db:migrate`.
+### Anti Double-Booking
 
----
+This is the highest marketplace risk. Test with real database behavior.
 
-## 7. Folder Structure
+- Reject a booking for an already occupied slot.
+- Reject partial overlaps.
+- Allow the same time on different courts.
+- Allow rebooking after cancellation when the slot is released.
+- Prove race-condition handling with concurrent requests.
 
-```
+### Payment Webhook Idempotency
 
-├── test/
-│   ├── setup.ts                   # Global unit-safe setup; no DB connection
-│   ├── integration/
-│   │   ├── setup.ts               # Integration-only env validation
-│   │   └── db.ts                  # Prisma client/helper for DB integration tests
-│   ├── helpers/
-│   │   ├── factory.ts             # Test data factories (createTestUser, createTestVenue, dll)
-│   │   ├── fixtures.ts            # Reusable test fixtures
-│   │   └── webhook.ts             # Webhook payload builders
-│   └── mocks/
-│       ├── xendit.ts              # Mock Xendit API responses
-│       └── uploadthing.ts         # Mock upload responses
-├── lib/
-│   ├── booking-code.ts
-│   ├── booking-code.test.ts       # ← Co-located unit test
-│   ├── slot-calculator.ts
-│   ├── slot-calculator.test.ts
-│   ├── currency.ts
-│   └── currency.test.ts
-├── services/
-│   ├── booking/
-│   │   ├── booking.service.ts
-│   │   └── booking.service.test.ts  # ← Integration test
-│   ├── payment/
-│   │   ├── webhook.service.ts
-│   │   └── webhook.service.test.ts
-│   └── ledger/
-│       ├── ledger.service.ts
-│       └── ledger.service.test.ts
-e2e/
-├── customer-booking.spec.ts       # Full booking journey
-├── venue-onboarding.spec.ts       # Venue registration flow
-├── admin-approval.spec.ts         # Admin workflow
-└── helpers/
-    ├── auth.ts                    # Login helper, session setup
-    └── seed.ts                    # E2E-specific seed data
-```
+- Payment success confirms the booking and creates ledger entries.
+- Replaying the same webhook only processes once.
+- Invalid callback tokens are rejected.
+- Expired payment events release pending bookings correctly.
+
+### Ledger Accuracy
+
+- Confirmed booking records gross, commission, and net amounts correctly.
+- Refunds create the correct debit entries.
+- Venue balance equals the sum of ledger credits minus debits.
+- Use integer/BigInt arithmetic, not floats.
+
+### Payment Retry
+
+- Existing active checkout URL remains available while payment is pending.
+- Failed payment can be retried before booking expiry.
+- Late success from an older payment attempt is ignored.
+
+### Refund, Withdrawal, Admin Ops
+
+- Refund success/failure affects ledger and status correctly.
+- Withdrawal paid/failed behavior is idempotent.
+- Manual adjustments require reasons and audit logs.
+- Staff permissions are enforced after revoke.
 
 ---
 
-## 8. Test Data Factories
+## 9. Test Data
 
-```typescript
-// test/helpers/factory.ts
-import { prisma } from "../setup"
-import { nanoid } from "nanoid"
+General rules:
 
-export async function createTestUser(overrides = {}) {
-  return prisma.user.create({
-    data: {
-      id: nanoid(),
-      name: "Test User",
-      email: `test-${nanoid(6)}@example.com`,
-      emailVerified: true,
-      ...overrides,
-    },
-  })
-}
+- Prefer factories/helpers for repeated integration fixtures.
+- Keep generated emails/slugs/IDs unique per test run.
+- Clean records created by the test, not unrelated database state.
+- Do not seed or reset the development database from tests.
+- Avoid depending on global seed data unless the test is specifically validating seed behavior.
 
-export async function createTestVenue(orgId: string, overrides = {}) {
-  return prisma.venue.create({
-    data: {
-      name: "Test Venue",
-      slug: `test-venue-${nanoid(6)}`,
-      organizationId: orgId,
-      status: "approved",
-      ...overrides,
-    },
-  })
-}
-
-export async function createTestBooking(
-  userId: string,
-  venueId: string,
-  branchId: string,
-  courtId: string,
-  overrides = {}
-) {
-  const startsAt = new Date("2026-05-01T01:00:00.000Z")
-  const endsAt = new Date("2026-05-01T02:00:00.000Z")
-
-  return prisma.booking.create({
-    data: {
-      bookingCode: `QC-TEST${nanoid(4).toUpperCase()}`,
-      customerUserId: userId,
-      venueId,
-      branchId,
-      status: "pending_payment",
-      paymentStatus: "pending",
-      totalAmount: BigInt(200_000),
-      slots: {
-        create: {
-          courtId,
-          startsAt,
-          endsAt,
-          venueTimezone: "Asia/Jakarta",
-          localDate: new Date("2026-05-01"),
-          localStartTime: new Date("1970-01-01T08:00:00.000Z"),
-          localEndTime: new Date("1970-01-01T09:00:00.000Z"),
-          durationMinutes: 60,
-          priceAmount: BigInt(200_000),
-        },
-      },
-      ...overrides,
-    },
-    include: { slots: true },
-  })
-}
-
-export function buildWebhookPayload(externalId: string, status = "PAID") {
-  return {
-    id: `evt_${nanoid()}`,
-    event: `invoice.${status.toLowerCase()}`,
-    data: {
-      id: externalId,
-      status,
-      amount: 200_000,
-      paid_at: new Date().toISOString(),
-    },
-  }
-}
-```
+For protected E2E, keep fixture creation local and explicit unless repetition justifies a helper. The current protected auth E2E creates Better Auth users through the app auth endpoint, then prepares only the DB rows needed for the protected route under test.
 
 ---
 
-## 9. Metodologi: Hybrid TDD
+## 10. Hybrid TDD Guidance
 
-### Prinsip
+Use TDD where behavior is precise and high-risk:
 
-QuickCourt menggunakan **Hybrid TDD** — TDD untuk service layer dan business logic, test-after untuk UI dan setup.
+| Area | Approach | Reason |
+| --- | --- | --- |
+| Service layer | TDD | Requirements are explicit and risk is high |
+| Pure functions | TDD | Inputs/outputs are deterministic |
+| Database constraints | TDD | Constraints must be proven against PostgreSQL |
+| State transitions | TDD | Acceptance criteria map naturally to tests |
+| UI composition | Test-after or E2E | Design changes frequently |
+| Third-party internals | Do not test | Owned by the library/provider |
 
-```
-Red    →  Tulis test yang mendeskripsikan behavior yang diinginkan → test FAIL
-Green  →  Tulis implementasi minimum agar test PASS
-Refactor → Perbaiki kode tanpa mengubah behavior → test tetap PASS
-```
-
-### Kapan TDD, Kapan Tidak
-
-| Area                                                              | Pendekatan            | Alasan                                |
-| ----------------------------------------------------------------- | --------------------- | ------------------------------------- |
-| **Service layer** (booking, payment, ledger, webhook, approval)   | ✅ **TDD**            | Requirements jelas, risiko tinggi     |
-| **Pure functions** (validators, calculators, formatters, masking) | ✅ **TDD**            | Input/output terdefinisi              |
-| **Database constraints** (anti double-booking, idempotency)       | ✅ **TDD**            | Harus dibuktikan sebelum implementasi |
-| **State machine transitions**                                     | ✅ **TDD**            | Acceptance criteria = test scenarios  |
-| **UI components** (forms, layouts, pages)                         | ❌ Test-after via E2E | Exploratory, desain berubah-ubah      |
-| **Third-party setup** (Better Auth, Uploadthing)                  | ❌ Tidak perlu        | Bukan kode kita                       |
-| **CRUD sederhana** (master data sport/city)                       | ❌ Tidak perlu        | Overhead tidak sebanding              |
-
-### Workflow TDD per Area
-
-Setiap area yang punya service layer mengikuti alur ini:
-
-```
-1. Baca acceptance criteria area/milestone
-2. Tulis test file (*.service.test.ts) berdasarkan acceptance criteria
-3. Run test → semua FAIL (Red)
-4. Implementasi service layer → test PASS (Green)
-5. Refactor jika perlu
-6. Build UI yang memanggil service
-7. Commit: test + implementasi + UI
-```
-
-### Contoh: Venue Registration
-
-```typescript
-// services/venue.service.test.ts — ditulis SEBELUM venue.service.ts
-
-describe("createVenueWithBranch", () => {
-  it("membuat venue dan branch default dalam satu transaction", async () => {
-    const result = await createVenueWithBranch({ name: "Test Venue", ... })
-    expect(result.venue).toBeDefined()
-    expect(result.branch.isDefault).toBe(true)
-  })
-
-  it("rollback venue jika branch gagal", async () => {
-    // Force branch creation to fail
-    await expect(createVenueWithBranch({ name: "Test", cityId: "invalid" }))
-      .rejects.toThrow()
-    // Verify venue was NOT created
-    const venues = await db.venue.findMany()
-    expect(venues).toHaveLength(0)
-  })
-
-  it("menolak jika user bukan org owner", async () => {
-    const customer = await createTestUser()
-    await expect(createVenueWithBranch({ ...data, userId: customer.id }))
-      .rejects.toThrow("Unauthorized")
-  })
-})
-```
-
-### Test Tidak Menjadi Task Terpisah
-
-Dengan TDD, test tidak diperlakukan sebagai pekerjaan terpisah dari implementasi. Test adalah bagian dari setiap area yang memiliki service layer. Acceptance criteria area/milestone menjadi test specification.
-
-### Per-Milestone Test Summary
-
-| Milestone                                                   | Test yang Ditulis (TDD)                                                                                                                   |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| **Milestone 1 — Foundation**                                | Setup Vitest, unit-only default test command, required DB integration harness, env validation, auth config, access helpers                |
-| **Milestone 2 — Organization & Venue Profile Onboarding**   | TDD: org invite/accept, venue profile draft, permission, bank masking/verification                                                        |
-| **Milestone 3 — Court, Schedule, Pricing & Venue Approval** | TDD: court CRUD, slot calculator, price calculator, operating hours, approval lifecycle                                                   |
-| **Milestone 4 — Marketplace & Booking Core**                | TDD: booking creation, anti double-booking, state machine, cancellation policy snapshot                                                   |
-| **Milestone 5 — Payment, Webhook & Transaction Posting**    | TDD: payment retry, webhook idempotency, expiry sweep, minimal ledger posting                                                             |
-| **Milestone 6 — Venue Operations & Staff**                  | TDD: manual booking, check-in, staff permissions, booking auto-complete                                                                   |
-| **Milestone 7 — Finance, Refund, Withdrawal & Admin Ops**   | TDD: ledger accuracy, balance calculation, refund, withdrawal, adjustment, reconciliation                                                 |
-| **Milestone 8 — Notification Workflows**                    | TDD: email trigger conditions, reminder cron, template rendering, notification logging                                                    |
-| **Milestone 9 — Hardening, E2E & Release Readiness**        | E2E test, race condition test, duplicate webhook, cron idempotency, release gates                                                         |
+Test work is part of implementation work for service-layer behavior. It should not be deferred to a separate hardening task when the behavior affects money, booking integrity, permissions, or auditability.
 
 ---
 
-## 10. Coverage Target
+## 11. Coverage Targets
 
-### MVP Target: Pragmatic, Bukan Angka
+Coverage targets are pragmatic:
 
-| Layer                                        | Target          | Catatan                             |
-| -------------------------------------------- | --------------- | ----------------------------------- |
-| **Service layer** (booking, payment, ledger) | **80%+**        | Ini yang paling kritis              |
-| **Utils & validators**                       | **90%+**        | Pure functions, mudah di-test       |
-| **API routes**                               | **70%+**        | Melalui integration test            |
-| **UI components**                            | **Tidak wajib** | Dicakup oleh E2E test               |
-| **Overall**                                  | **60-70%**      | Realistis untuk MVP solo/small team |
+| Layer | Target | Notes |
+| --- | --- | --- |
+| Service layer | 80%+ | Booking, payment, ledger, webhook, and permissions are most important |
+| Utils and validators | 90%+ | Pure functions are cheap to test |
+| API/routes with business behavior | 70%+ | Prefer integration or E2E depending on the behavior |
+| UI components | No blanket target | Cover stable components and critical states |
+| Overall | 60-70% | Do not chase low-value coverage |
 
-> [!IMPORTANT]
-> Coverage tinggi pada **booking service, webhook handler, dan ledger service** jauh lebih berharga daripada 90% overall coverage yang didominasi oleh UI component test.
+High coverage on booking, webhook, and ledger code is more valuable than broad low-signal UI coverage.
 
 ---
 
-## 11. CI/CD Integration
+## 12. CI Guidance
 
-### GitHub Actions (Rekomendasi)
+Recommended CI stages:
 
-```yaml
-# .github/workflows/test.yml
-name: Test
+1. Install dependencies with `npm ci`.
+2. Run `npm run typecheck`.
+3. Run `npm run lint`.
+4. Run `npm run test`.
+5. Start the PostgreSQL test service.
+6. Run `npm run test:db:migrate`.
+7. Run `npm run test:integration`.
+8. Install Playwright browsers if needed.
+9. Run `npm run test:e2e`.
+10. Run `npm run test:e2e:protected` when CI has a prepared isolated test DB and safe environment variables.
 
-on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main]
+Browser install examples:
 
-jobs:
-  unit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm run test
-
-  db-integration:
-    runs-on: ubuntu-latest
-    needs: unit
-    services:
-      postgres:
-        image: postgres:17-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: quickcourt_test
-        ports:
-          - 5433:5432
-        options: >-
-          --health-cmd="pg_isready"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run db:generate
-      - run: npm run test:db:migrate
-        env:
-          DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5433/quickcourt_test
-      - run: npm run db:verify-constraints
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5433/quickcourt_test
-      - run: npm run test:integration
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/quickcourt_dev_guard
-          DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5433/quickcourt_test
-
-  e2e:
-    runs-on: ubuntu-latest
-    needs: db-integration
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: playwright-report
-          path: playwright-report/
+```bash
+npx playwright install chromium
 ```
 
-P1-07 does not require a committed CI workflow. The recommended future CI foundation is the `unit` and `db-integration` jobs. The `e2e` job is a later milestone/release-readiness layer and should not block the Phase 1 harness unless the project explicitly enables E2E in CI.
+or, on Linux CI when browser dependencies are missing:
 
-Current status: the local Vitest and DB integration harness commands are implemented. Unit tests include `*.test.ts` and `*.test.tsx` files, with P1-06 adding focused auth UI smoke coverage and P1-08 adding the final Phase 1 auth/access/email/page/shell behavior coverage. The GitHub Actions workflow is deferred outside Phase 1 by D-P1-017, so the CI example above is still the target design rather than a committed workflow.
+```bash
+npx playwright install --with-deps chromium
+```
 
-### Phase 1 Behavior Coverage Status
-
-P1-08 completed local Vitest coverage for the Phase 1 behavior surface:
-
-- Auth configuration smoke coverage verifies QuickCourt's Better Auth config contract without loading a real Prisma database or asserting Better Auth private internals.
-- Email sender and template coverage verifies console sender selection, hosted-environment rejection of console sending, Resend config requirements, mocked Resend sends, and verification/reset template rendering and escaping.
-- Access helper and route guard coverage verifies authenticated dashboard access, admin-role admin access, organization-membership venue access, sign-in redirects for authentication failures, and forbidden redirects for authorization failures.
-- DB integration coverage verifies organization member/owner behavior against migrated PostgreSQL schema through `DATABASE_URL_TEST`, while mocking session resolution only.
-- Auth page and protected shell smoke coverage verifies stable page states and protected shell render states in Vitest/jsdom without adding browser automation.
-
-Deferred browser/E2E coverage:
-
-- Real browser auth journeys, including typing into forms, submitting Better Auth requests end-to-end, cookie/session persistence, and post-auth navigation, are deferred to the E2E/hardening milestone.
-- Browser matrix coverage and Playwright setup remain deferred unless the project explicitly enables E2E earlier.
-- Booking, payment, webhook, ledger, refund, and withdrawal E2E tests remain owned by later marketplace milestones because those workflows are out of Phase 1 scope.
-
-### Pipeline Rules
-
-- **Local merge readiness:** maintainer harus menjalankan unit test dan DB integration harness untuk perubahan yang menyentuh behavior, schema, auth, access, atau service layer.
-- **Future CI:** setelah CI diaktifkan, PR merge harus blocked jika unit test atau DB integration harness gagal.
-- **E2E test:** berjalan setelah unit/integration pass jika E2E CI sudah diaktifkan.
-- **Coverage report:** di-upload sebagai artifact setelah CI coverage workflow tersedia.
+Future CI should upload Playwright traces/screenshots on failure. Protected E2E must never point at a shared dev/prod database in CI.
 
 ---
 
-## 12. Hal yang Tidak Perlu Di-test (MVP)
+## 13. Summary Decisions
 
-Untuk efisiensi waktu di MVP, **skip** testing untuk:
-
-- UI component rendering (button, card, layout) — cukup E2E.
-- Prisma query builder correctness — itu tanggung jawab Prisma.
-- Next.js routing behavior — itu tanggung jawab framework.
-- Third-party library internals (Better Auth, Xendit SDK).
-- CSS/styling — visual regression testing ditunda post-MVP.
-
-Fokus test hanya pada **kode bisnis kita yang punya risiko finansial atau data integrity**.
-
----
-
-## 13. Ringkasan Keputusan
-
-| Keputusan                  | Pilihan                                                  | Alasan Singkat                                 |
-| -------------------------- | -------------------------------------------------------- | ---------------------------------------------- |
-| Unit/Integration framework | **Vitest**                                               | Native ESM, fast, modern                       |
-| E2E framework              | **Playwright**                                           | Reliable, auto-wait, trace viewer              |
-| Test database              | **Real PostgreSQL (Docker)**                             | Exclusion constraint harus ditest nyata        |
-| Mocking strategy           | **Minimal — mock hanya external API**                    | Prefer real DB, real service layer             |
-| Test timing                | **Hybrid TDD — test sebelum implementasi service layer** | Bugs tertangkap lebih awal, requirements jelas |
-| Coverage target            | **80%+ service layer, 60-70% overall**                   | Pragmatis untuk MVP                            |
-| CI provider                | **GitHub Actions**                                       | Free tier cukup, built-in PostgreSQL service   |
+| Decision | Choice |
+| --- | --- |
+| Unit/component framework | Vitest |
+| Component assertions | React Testing Library + `@testing-library/jest-dom` |
+| Browser E2E | Playwright |
+| Test database | Real PostgreSQL through Docker |
+| Public E2E | DB-free |
+| Protected E2E | DB-backed with `DATABASE_URL_TEST` |
+| App Router async route testing | Prefer Playwright, not Vitest |
+| Mocking | Minimal and local |
+| Snapshots | Avoid large snapshots and snapshot-only tests |
