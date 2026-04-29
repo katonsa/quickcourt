@@ -33,12 +33,11 @@ vi.mock("@/lib/auth-client", () => ({
 }))
 
 import ForgotPasswordPage from "@/app/(auth)/forgot-password/page"
-import SignInPage from "@/app/(auth)/sign-in/page"
 import SignUpPage from "@/app/(auth)/sign-up/page"
+import { SignInForm } from "@/components/auth/sign-in-form"
 import {
   FORGOT_PASSWORD_PATH,
   SIGN_IN_PATH,
-  SIGN_IN_REDIRECT_PARAM,
   SIGN_UP_PATH,
 } from "@/lib/auth/paths"
 
@@ -47,14 +46,8 @@ describe("auth pages", () => {
     cleanup()
   })
 
-  it("renders the sign-in page with canonical account links", async () => {
-    render(
-      await SignInPage({
-        searchParams: Promise.resolve({
-          [SIGN_IN_REDIRECT_PARAM]: "/dashboard/settings",
-        }),
-      })
-    )
+  it("renders the sign-in form with canonical account links", () => {
+    render(<SignInForm redirectTo="/dashboard/settings" />)
 
     expect(screen.getByText("Sign in")).toBeVisible()
     expect(screen.getByLabelText("Email")).toBeVisible()
