@@ -160,37 +160,60 @@ P1-08 may start once the P1-07 local harness is complete. It must not be marked 
 
 ## Files / Modules
 
-Likely touched:
+Touched:
 
 ```text
 lib/auth.test.ts
 lib/auth/access.test.ts
 lib/auth/guards.test.ts
+lib/email/console-sender.test.ts
 lib/email/email-sender.test.ts
+lib/email/resend-sender.test.ts
 lib/email/templates/auth-email-templates.test.ts
 components/auth/auth-ui.test.tsx
 proxy.test.ts
 test/auth/*
 test/integration/*.integration.test.ts
+test/integration/setup.ts
 docs/testing-strategy.md
 docs/phase-1/tasks/08-phase-1-behavior-test-coverage.md
 docs/phase-1/breakdown.md
 ```
 
+## Coverage Added
+
+Local unit coverage added in P1-08:
+
+- `lib/auth.test.ts` captures QuickCourt's Better Auth config contract through mocks, including app/base path, trusted origins, email/password verification settings, admin plugin intent, organization plugin intent, hosted-environment rate limit intent, and local email sender hooks.
+- `lib/email/*.test.ts` and `lib/email/templates/*.test.ts` cover console sender behavior, sender selection, hosted-environment console rejection, Resend config requirements, mocked Resend send success/failure, and auth email template rendering/escaping.
+- `lib/auth/access.test.ts`, `lib/auth/guards.test.ts`, `proxy.test.ts`, and `test/auth/protected-layouts.test.ts` cover access helper policy, route guard redirects, optimistic proxy matching, and protected layout guard mapping.
+- `test/auth/auth-pages.test.tsx` and `test/auth/protected-shells-smoke.test.tsx` cover stable auth page states and protected shell smoke states in Vitest/jsdom without browser automation.
+
+DB-backed local integration coverage added in P1-08:
+
+- `test/integration/auth-access.integration.test.ts` verifies organization member/owner behavior against migrated PostgreSQL schema through the P1-07 integration harness.
+- Session resolution is mocked in that integration test; membership data is real Prisma/PostgreSQL data isolated by generated IDs and cleaned up by test-created IDs.
+
+Deferred browser/E2E coverage:
+
+- Browser-level auth journeys are deferred because P1-08 intentionally does not add Playwright or browser E2E tooling.
+- Deferred auth browser behavior includes real form submission against Better Auth endpoints, session cookie persistence, cross-page navigation after auth mutations, and browser-only regressions.
+- Booking, payment, webhook, ledger, refund, withdrawal, and browser matrix coverage remain out of scope for Phase 1 and belong to later marketplace hardening/E2E milestones.
+
 ## Acceptance Criteria
 
-- [ ] Auth config smoke tests exist.
-- [ ] Email sender selection tests exist.
-- [ ] Access helper tests exist.
-- [ ] Route guard behavior tests exist where feasible.
-- [ ] Auth page and shell smoke tests exist where feasible in Vitest.
-- [ ] Tests do not call external Resend services.
-- [ ] Tests do not require production secrets.
-- [ ] Any deferred behavior coverage is documented with a reason.
-- [ ] `npm run test` remains DB-free.
-- [ ] DB-backed tests, if added, are `*.integration.test.ts` and pass through `npm run test:integration`.
-- [ ] P1-08 is not marked `Done` before required local verification commands pass.
-- [ ] Committed CI workflow is treated as deferred outside Phase 1, not as a P1-08 acceptance criterion.
+- [x] Auth config smoke tests exist.
+- [x] Email sender selection tests exist.
+- [x] Access helper tests exist.
+- [x] Route guard behavior tests exist where feasible.
+- [x] Auth page and shell smoke tests exist where feasible in Vitest.
+- [x] Tests do not call external Resend services.
+- [x] Tests do not require production secrets.
+- [x] Any deferred behavior coverage is documented with a reason.
+- [x] `npm run test` remains DB-free.
+- [x] DB-backed tests, if added, are `*.integration.test.ts` and pass through `npm run test:integration`.
+- [x] P1-08 is not marked `Done` before required local verification commands pass.
+- [x] Committed CI workflow is treated as deferred outside Phase 1, not as a P1-08 acceptance criterion.
 
 ## Test Plan
 
@@ -214,6 +237,32 @@ npm run test:db:down
 ```
 
 Set `DATABASE_URL_TEST` to the local test database before running DB-backed tests. `DATABASE_URL` must not equal `DATABASE_URL_TEST`.
+
+If `.env` is loaded by Node scripts but not exported into the shell, run the constraint verification with explicit shell loading:
+
+```text
+set -a; . ./.env; set +a; DATABASE_URL="$DATABASE_URL_TEST" npm run db:verify-constraints
+```
+
+## Verification Results
+
+Final P1-08 local verification on 2026-04-29:
+
+```text
+npm run test                    # passed, 17 files / 93 tests
+npm run typecheck               # passed
+npm run lint                    # passed
+npm run test:db:up              # passed
+npm run db:generate             # passed
+npm run test:db:migrate         # passed
+set -a; . ./.env; set +a; DATABASE_URL="$DATABASE_URL_TEST" npm run db:verify-constraints    # passed
+npm run test:integration        # passed, 2 files / 7 tests
+npm run test:db:down            # passed; test Postgres container stopped and removed
+```
+
+`test:db:down` reported that the shared Docker network remained in use by an orphan non-test dev container, but the `postgres-test` container itself was stopped and removed.
+
+Committed CI workflow verification is not part of P1-08 because D-P1-017 defers committed CI outside Phase 1.
 
 ## Edge Cases
 

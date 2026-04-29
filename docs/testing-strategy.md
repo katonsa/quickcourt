@@ -846,7 +846,23 @@ jobs:
 
 P1-07 does not require a committed CI workflow. The recommended future CI foundation is the `unit` and `db-integration` jobs. The `e2e` job is a later milestone/release-readiness layer and should not block the Phase 1 harness unless the project explicitly enables E2E in CI.
 
-Current status: the local Vitest and DB integration harness commands are implemented. Unit tests include `*.test.ts` and `*.test.tsx` files, with P1-06 adding focused auth UI smoke coverage. The GitHub Actions workflow is deferred outside Phase 1 by D-P1-017, so the CI example above is still the target design rather than a committed workflow. Broader auth page and protected shell behavior coverage remains scoped to P1-08.
+Current status: the local Vitest and DB integration harness commands are implemented. Unit tests include `*.test.ts` and `*.test.tsx` files, with P1-06 adding focused auth UI smoke coverage and P1-08 adding the final Phase 1 auth/access/email/page/shell behavior coverage. The GitHub Actions workflow is deferred outside Phase 1 by D-P1-017, so the CI example above is still the target design rather than a committed workflow.
+
+### Phase 1 Behavior Coverage Status
+
+P1-08 completed local Vitest coverage for the Phase 1 behavior surface:
+
+- Auth configuration smoke coverage verifies QuickCourt's Better Auth config contract without loading a real Prisma database or asserting Better Auth private internals.
+- Email sender and template coverage verifies console sender selection, hosted-environment rejection of console sending, Resend config requirements, mocked Resend sends, and verification/reset template rendering and escaping.
+- Access helper and route guard coverage verifies authenticated dashboard access, admin-role admin access, organization-membership venue access, sign-in redirects for authentication failures, and forbidden redirects for authorization failures.
+- DB integration coverage verifies organization member/owner behavior against migrated PostgreSQL schema through `DATABASE_URL_TEST`, while mocking session resolution only.
+- Auth page and protected shell smoke coverage verifies stable page states and protected shell render states in Vitest/jsdom without adding browser automation.
+
+Deferred browser/E2E coverage:
+
+- Real browser auth journeys, including typing into forms, submitting Better Auth requests end-to-end, cookie/session persistence, and post-auth navigation, are deferred to the E2E/hardening milestone.
+- Browser matrix coverage and Playwright setup remain deferred unless the project explicitly enables E2E earlier.
+- Booking, payment, webhook, ledger, refund, and withdrawal E2E tests remain owned by later marketplace milestones because those workflows are out of Phase 1 scope.
 
 ### Pipeline Rules
 
