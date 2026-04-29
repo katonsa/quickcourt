@@ -54,6 +54,16 @@ Venue Owner access is Organization membership with role `owner`. Phase 2 invitat
 - DB integration tests for invitation creation/acceptance membership behavior where feasible.
 - Tests for owner invitation event/payload routing; template/provider tests are owned by P2-13.
 
+## Implementation Notes
+
+- Implemented in `lib/organizations/owner-invitation-service.ts`.
+- The installed Better Auth Organization plugin exposes `createInvitation` at `/organization/invite-member`, but that create endpoint requires the caller to already be an Organization member with invitation permissions. QuickCourt's P2-03 service keeps the invite action Super Admin-controlled by validating the Super Admin actor itself and writing a Better Auth-compatible pending `Invitation` row.
+- Acceptance uses Better Auth's `acceptInvitation` behavior, which updates invitation status and creates the `Member` row from the invitation role. DB integration coverage verifies accepted owner invitations create `Member.role === "owner"` and are visible through existing Organization membership access helpers.
+- Better Auth's observed default invitation expiration is 48 hours (`60 * 60 * 48` seconds); P2-03 mirrors that default.
+- Duplicate safety is enforced by `member(organizationId, userId)` uniqueness and a partial unique index on pending owner invitations per Organization/email. The service cancels expired pending owner invitations before creating a fresh one.
+- P2-03 emits owner invitation email payload data with an accept URL, but final templates/provider dispatch remain in P2-13. The invitation id is only present inside the accept URL, not as a separate payload field.
+- Audit logs are written for owner invitation creation and the service acceptance wrapper. Invitation audit metadata hashes the email and invitation id, and stores the email domain rather than the full address.
+
 ## Definition of Done
 
 Owner invitation is an admin-controlled flow that produces an Organization owner membership and unlocks venue onboarding access.

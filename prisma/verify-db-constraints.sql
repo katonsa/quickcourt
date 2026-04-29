@@ -82,6 +82,14 @@ BEGIN
         (
           'uq_venue_ledger_entry_idempotency_key',
           'CREATE UNIQUE INDEX uq_venue_ledger_entry_idempotency_key ON public.venue_ledger_entries USING btree (idempotency_key)'
+        ),
+        (
+          'member_organizationId_userId_key',
+          'CREATE UNIQUE INDEX "member_organizationId_userId_key" ON public.member USING btree ("organizationId", "userId")'
+        ),
+        (
+          'uq_pending_owner_invitation_per_email',
+          'CREATE UNIQUE INDEX uq_pending_owner_invitation_per_email ON public.invitation USING btree ("organizationId", lower(email), role) WHERE ((status = ''pending''::text) AND (role = ''owner''::text))'
         )
     ) AS expected(indexname, indexdef)
   LOOP

@@ -422,6 +422,7 @@ model Member {
   // App extension untuk staff yang hanya boleh akses branch tertentu.
   branchAccess MemberBranchAccess[]
 
+  @@unique([organizationId, userId])
   @@index([organizationId])
   @@index([userId])
   @@map("member")
