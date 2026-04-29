@@ -25,6 +25,7 @@
     "test:db:up": "docker compose -f docker-compose.test.yml up -d postgres-test",
     "test:db:down": "docker compose -f docker-compose.test.yml down",
     "test:db:migrate": "tsx scripts/test-db-migrate.ts",
+    "test:e2e": "playwright test",
     "test:integration": "vitest run --config vitest.config.integration.ts",
     "test:all": "npm run test && npm run test:integration"
   },
@@ -52,6 +53,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
