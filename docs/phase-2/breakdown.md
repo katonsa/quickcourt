@@ -16,7 +16,7 @@
 | ID    | Task                         | Priority | Status | Depends On          | Spec                                                                                  | Acceptance Summary                                                                                | Test Required                                  |
 | ----- | ---------------------------- | -------: | ------ | ------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
 | P2-01 | Phase 2 Docs & Decision Log  |       P0 | Done   | Phase 1 docs        | [01-phase-2-docs-and-decision-log.md](./tasks/01-phase-2-docs-and-decision-log.md)    | Phase 2 docs, rules, decisions, task board, and task specs exist                                  | Doc review                                     |
-| P2-02 | Organization Admin Service   |       P0 | Todo   | Phase 1 Done        | [02-organization-admin-service.md](./tasks/02-organization-admin-service.md)           | Super Admin can create venue Organization through service layer with audit                        | Unit + DB integration                          |
+| P2-02 | Organization Admin Service   |       P0 | Done   | Phase 1 Done        | [02-organization-admin-service.md](./tasks/02-organization-admin-service.md)           | Super Admin can create venue Organization through service layer with audit                        | Unit + DB integration                          |
 | P2-03 | Owner Invitation Flow        |       P0 | Todo   | P2-02               | [03-owner-invitation-flow.md](./tasks/03-owner-invitation-flow.md)                    | Super Admin can invite an already-registered user as owner; acceptance grants venue access        | Unit + DB integration                          |
 | P2-04 | Admin Venue Onboarding UI    |       P0 | Todo   | P2-02, P2-03        | [04-admin-venue-onboarding-ui.md](./tasks/04-admin-venue-onboarding-ui.md)            | `/admin/venues` supports organization creation and owner invitation                               | Page/component smoke + service tests           |
 | P2-05 | Venue Draft Service          |       P0 | Todo   | P2-03               | [05-venue-draft-service.md](./tasks/05-venue-draft-service.md)                        | Owner can create/update one draft Venue for their Organization                                    | Unit + DB integration                          |
@@ -92,7 +92,7 @@ Before marking Phase 2 as `Done`, confirm:
 ## Status and Dependency Notes
 
 - P2-01 is `Done` when this docs folder, task board, rules, and task specs exist.
-- P2-02 should not start until Phase 1 is fully `Done`, including P1-08 behavior coverage, unless a decision-log entry explicitly allows a narrow exception.
+- P2-02 is implemented by `lib/organizations/organization-admin-service.ts`; duplicate creation is prevented by normalized Organization slug, creation uses the Better Auth organization create endpoint, and no Venue row is created.
 - P2-03 should reuse Better Auth Organization invitation behavior where practical, but must preserve QuickCourt's Super Admin-controlled owner model.
 - P2-08 can be implemented after P2-05 because venue photos require a persisted Venue.
 - P2-10 and P2-11 must preserve the `accountNumberLast4` masking contract introduced before Phase 2 implementation.

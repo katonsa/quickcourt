@@ -56,3 +56,14 @@ QuickCourt does not allow self-service owner registration. A Super Admin creates
 ## Definition of Done
 
 The service layer can create the Organization boundary needed for venue onboarding without exposing self-service owner creation.
+
+## Implementation Notes
+
+- Implemented in `lib/organizations/organization-admin-service.ts`.
+- The service requires Super Admin access through the Phase 1 admin access helper before any duplicate lookup or create call.
+- Duplicate creation is duplicate-safe by normalized `Organization.slug`: names are trimmed for display, slugs are generated or normalized from input, and a slug collision returns a service duplicate error before create where possible. The database unique slug constraint remains the final race-condition guard.
+- Organization creation uses the Better Auth server-side organization create endpoint with the Super Admin actor id, preserving the Better Auth `Organization`/`Member` write path used by the repo.
+- The returned DTO is limited to `id`, `name`, `slug`, and `createdAt`.
+- Audit logging writes `actorUserId`, `action = "organization.create"`, `entityType = "organization"`, `entityId`, censored `afterData`, and safe metadata for the service/source and duplicate rule.
+- If audit persistence fails after Better Auth creates the Organization, the service attempts to roll back the Organization so retries do not leave an unaudited duplicate boundary behind.
+- P2-02 creates no `Venue` row; venue drafts remain owned by later Phase 2 tasks.

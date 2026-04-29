@@ -5,7 +5,7 @@ Dokumentasi ini adalah sumber rujukan untuk product scope, arsitektur, rencana m
 ## Status Implementasi
 
 - **Phase 1 Foundation:** implemented and locally verified.
-- **Phase 2 Organization & Venue Profile Onboarding:** planning docs exist; implementation tasks after P2-01 remain planned until their task board status changes.
+- **Phase 2 Organization & Venue Profile Onboarding:** planning docs exist; P2-01 and P2-02 are implemented, while later tasks remain planned until their task board status changes.
 - **Booking, payment, ledger, refund, withdrawal, staff operations, and release hardening:** planned for later milestones in `project-plan.md`.
 
 Gunakan status di `docs/phase-*/breakdown.md` untuk membedakan fitur yang sudah implemented, planned, deferred, atau blocked.

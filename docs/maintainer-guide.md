@@ -9,7 +9,7 @@ QuickCourt is a Next.js 16 App Router application with React 19, TypeScript, Tai
 Implementation status:
 
 - Phase 1 Foundation is complete. Auth, access helpers, protected shells, env validation, logging, Prisma, migrations, seed support, and local test harnesses are present.
-- Phase 2 planning docs are present. P2-01 is complete, while implementation tasks P2-02 through P2-14 are still planned unless their task status changes.
+- Phase 2 planning docs are present. P2-01 and P2-02 are complete, while implementation tasks P2-03 through P2-14 are still planned unless their task status changes.
 - Later marketplace, booking, payment, ledger, refund, withdrawal, staff, and release hardening work remains planned in `docs/project-plan.md`.
 
 When task specs and code disagree, treat the code and current task status as authoritative. Update the relevant docs in the same change that changes behavior.
@@ -268,4 +268,3 @@ For staging or production-like deployment:
    ```bash
    npm run start
    ```
-
