@@ -75,43 +75,43 @@ describe("auth pages", () => {
       })
     )
 
-    expect(screen.getByText("Sign in")).toBeTruthy()
-    expect(screen.getByLabelText("Email")).toBeTruthy()
-    expect(screen.getByLabelText("Password")).toBeTruthy()
+    expect(screen.getByText("Sign in")).toBeVisible()
+    expect(screen.getByLabelText("Email")).toBeVisible()
+    expect(screen.getByLabelText("Password")).toBeVisible()
     expect(
-      screen.getByRole("link", { name: "Forgot password?" }).getAttribute("href")
-    ).toBe(FORGOT_PASSWORD_PATH)
+      screen.getByRole("link", { name: "Forgot password?" })
+    ).toHaveAttribute("href", FORGOT_PASSWORD_PATH)
     expect(
-      screen.getByRole("link", { name: "Create an account" }).getAttribute("href")
-    ).toBe(SIGN_UP_PATH)
+      screen.getByRole("link", { name: "Create an account" })
+    ).toHaveAttribute("href", SIGN_UP_PATH)
   })
 
   it("renders the sign-up page as a customer account entry point", () => {
     render(<SignUpPage />)
 
-    expect(screen.getByText("Create your account")).toBeTruthy()
-    expect(screen.getByText(/Venue access is granted/)).toBeTruthy()
-    expect(screen.getByLabelText("Name")).toBeTruthy()
-    expect(screen.getByLabelText("Email")).toBeTruthy()
-    expect(screen.getByLabelText("Password")).toBeTruthy()
-    expect(screen.getByLabelText("Confirm password")).toBeTruthy()
+    expect(screen.getByText("Create your account")).toBeVisible()
+    expect(screen.getByText(/Venue access is granted/)).toBeVisible()
+    expect(screen.getByLabelText("Name")).toBeVisible()
+    expect(screen.getByLabelText("Email")).toBeVisible()
+    expect(screen.getByLabelText("Password")).toBeVisible()
+    expect(screen.getByLabelText("Confirm password")).toBeVisible()
     expect(
-      screen.getByRole("link", { name: "Sign in" }).getAttribute("href")
-    ).toBe(SIGN_IN_PATH)
+      screen.getByRole("link", { name: "Sign in" })
+    ).toHaveAttribute("href", SIGN_IN_PATH)
   })
 
   it("renders the forgot-password page without exposing provider details", () => {
     render(<ForgotPasswordPage />)
 
-    expect(screen.getByText("Reset your password")).toBeTruthy()
-    expect(screen.getByLabelText("Email")).toBeTruthy()
+    expect(screen.getByText("Reset your password")).toBeVisible()
+    expect(screen.getByLabelText("Email")).toBeVisible()
     expect(
       screen.getByRole("button", { name: "Send reset link" })
-    ).toBeTruthy()
+    ).toBeEnabled()
     expect(
-      screen.getByRole("link", { name: "Back to sign in" }).getAttribute("href")
-    ).toBe(SIGN_IN_PATH)
-    expect(screen.queryByText(/resend/i)).toBeNull()
+      screen.getByRole("link", { name: "Back to sign in" })
+    ).toHaveAttribute("href", SIGN_IN_PATH)
+    expect(screen.queryByText(/resend/i)).not.toBeInTheDocument()
   })
 
   it("renders a usable reset-password form when a token is present", async () => {
@@ -121,15 +121,13 @@ describe("auth pages", () => {
       })
     )
 
-    expect(screen.getByText("Set a new password")).toBeTruthy()
-    expect(screen.getByLabelText("New password")).toBeTruthy()
-    expect(screen.getByLabelText("Confirm new password")).toBeTruthy()
+    expect(screen.getByText("Set a new password")).toBeVisible()
+    expect(screen.getByLabelText("New password")).toBeVisible()
+    expect(screen.getByLabelText("Confirm new password")).toBeVisible()
     expect(
-      screen.getByRole("button", { name: "Update password" }).hasAttribute(
-        "disabled"
-      )
-    ).toBe(false)
-    expect(screen.queryByText(/reset-token/)).toBeNull()
+      screen.getByRole("button", { name: "Update password" })
+    ).toBeEnabled()
+    expect(screen.queryByText(/reset-token/)).not.toBeInTheDocument()
   })
 
   it("renders an unusable reset-password state without exposing token details", async () => {
@@ -141,13 +139,11 @@ describe("auth pages", () => {
 
     expect(
       screen.getByText("This reset link cannot be used. Request a new link to continue.")
-    ).toBeTruthy()
+    ).toBeVisible()
     expect(
-      screen.getByRole("button", { name: "Update password" }).hasAttribute(
-        "disabled"
-      )
-    ).toBe(true)
-    expect(screen.queryByText(/invalid-token/)).toBeNull()
+      screen.getByRole("button", { name: "Update password" })
+    ).toBeDisabled()
+    expect(screen.queryByText(/invalid-token/)).not.toBeInTheDocument()
   })
 
   it("renders verify-email success and error states from provider params", async () => {
@@ -156,7 +152,7 @@ describe("auth pages", () => {
     })
     const { unmount } = render(success)
 
-    expect(screen.getByText("Email verified")).toBeTruthy()
+    expect(screen.getByText("Email verified")).toBeVisible()
     unmount()
 
     render(
@@ -165,8 +161,8 @@ describe("auth pages", () => {
       })
     )
 
-    expect(screen.getByText("Verification link expired")).toBeTruthy()
-    expect(screen.queryByText(/expired-token/)).toBeNull()
+    expect(screen.getByText("Verification link expired")).toBeVisible()
+    expect(screen.queryByText(/expired-token/)).not.toBeInTheDocument()
   })
 
   it("redirects legacy auth aliases to canonical paths", async () => {

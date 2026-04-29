@@ -20,27 +20,27 @@ describe("auth UI components", () => {
     )
 
     expect(
-      screen.getByRole("link", { name: "QuickCourt" }).getAttribute("href")
-    ).toBe("/")
+      screen.getByRole("link", { name: "QuickCourt" })
+    ).toHaveAttribute("href", "/")
     expect(
-      screen.getByRole("link", { name: "Venues" }).getAttribute("href")
-    ).toBe("/venues")
-    expect(screen.getByRole("heading", { name: "Sign in" })).toBeTruthy()
+      screen.getByRole("link", { name: "Venues" })
+    ).toHaveAttribute("href", "/venues")
+    expect(screen.getByRole("heading", { name: "Sign in" })).toBeVisible()
   })
 
   it("renders the verified email notice with the canonical sign-in link", () => {
     render(<VerifyEmailNotice status="verified" hasProviderError={false} />)
 
-    expect(screen.getByText("Email verified")).toBeTruthy()
+    expect(screen.getByText("Email verified")).toBeVisible()
     expect(
-      screen.getByRole("link", { name: "Go to sign in" }).getAttribute("href")
-    ).toBe(SIGN_IN_PATH)
+      screen.getByRole("link", { name: "Go to sign in" })
+    ).toHaveAttribute("href", SIGN_IN_PATH)
   })
 
   it("renders an expired verification notice without exposing token details", () => {
     render(<VerifyEmailNotice hasProviderError />)
 
-    expect(screen.getByText("Verification link expired")).toBeTruthy()
-    expect(screen.queryByText(/token/i)).toBeNull()
+    expect(screen.getByText("Verification link expired")).toBeVisible()
+    expect(screen.queryByText(/token/i)).not.toBeInTheDocument()
   })
 })

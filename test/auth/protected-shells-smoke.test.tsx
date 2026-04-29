@@ -54,14 +54,16 @@ describe("protected shell smoke states", () => {
       </TooltipProvider>
     )
 
-    expect(screen.getAllByText("Court Player")[0]).toBeTruthy()
-    expect(screen.getAllByText("player@example.com")[0]).toBeTruthy()
-    expect(screen.getAllByText("QuickCourt")[0]).toBeTruthy()
-    expect(getLinkByHref(DASHBOARD_PATH)).toBeTruthy()
+    expect(screen.getByText("Court Player")).toBeVisible()
+    expect(screen.getAllByText("player@example.com")).toHaveLength(2)
+    expect(screen.getByRole("link", { name: "QuickCourt" })).toHaveAttribute(
+      "href",
+      DASHBOARD_PATH
+    )
     expect(
-      screen.getByRole("link", { name: "Settings" }).getAttribute("href")
-    ).toBe("/dashboard/settings")
-    expect(screen.getByText("Dashboard page content")).toBeTruthy()
+      screen.getByRole("link", { name: "Settings" })
+    ).toHaveAttribute("href", "/dashboard/settings")
+    expect(screen.getByText("Dashboard page content")).toBeVisible()
   })
 
   it("renders the admin shell as role-protected platform navigation", () => {
@@ -75,11 +77,12 @@ describe("protected shell smoke states", () => {
       </TooltipProvider>
     )
 
-    expect(screen.getAllByText("admin@example.com")[0]).toBeTruthy()
-    expect(screen.getByText("Admin console")).toBeTruthy()
-    expect(getLinkByHref(ADMIN_PATH)).toBeTruthy()
-    expect(screen.getByText("Admin role required")).toBeTruthy()
-    expect(screen.getByText("Admin page content")).toBeTruthy()
+    expect(screen.getAllByText("admin@example.com")).toHaveLength(2)
+    expect(
+      screen.getByRole("link", { name: /Admin console/ })
+    ).toHaveAttribute("href", ADMIN_PATH)
+    expect(screen.getByText("Admin role required")).toBeVisible()
+    expect(screen.getByText("Admin page content")).toBeVisible()
   })
 
   it("renders the venue dashboard shell from organization membership state", () => {
@@ -102,14 +105,14 @@ describe("protected shell smoke states", () => {
 
     expect(
       screen.getByRole("heading", { name: "Sample Courts Arena" })
-    ).toBeTruthy()
-    expect(screen.getByText("Owner")).toBeTruthy()
-    expect(screen.getByText("sample-courts")).toBeTruthy()
-    expect(screen.getByText("2 organization memberships")).toBeTruthy()
+    ).toBeVisible()
+    expect(screen.getByText("Owner")).toBeVisible()
+    expect(screen.getByText("sample-courts")).toBeVisible()
+    expect(screen.getByText("2 organization memberships")).toBeVisible()
     expect(
-      screen.getByRole("link", { name: "Overview" }).getAttribute("href")
-    ).toBe(DASHBOARD_VENUE_PATH)
-    expect(screen.getByText("Venue page content")).toBeTruthy()
+      screen.getByRole("link", { name: "Overview" })
+    ).toHaveAttribute("href", DASHBOARD_VENUE_PATH)
+    expect(screen.getByText("Venue page content")).toBeVisible()
   })
 
   it("renders route state actions for protected route failures", () => {
@@ -127,18 +130,12 @@ describe("protected shell smoke states", () => {
 
     expect(
       screen.getByRole("heading", { name: "Sign in to continue" })
-    ).toBeTruthy()
+    ).toBeVisible()
     expect(
-      screen.getByRole("link", { name: "Sign in" }).getAttribute("href")
-    ).toBe(SIGN_IN_PATH)
+      screen.getByRole("link", { name: "Sign in" })
+    ).toHaveAttribute("href", SIGN_IN_PATH)
     expect(
-      screen.getByRole("link", { name: "Browse venues" }).getAttribute("href")
-    ).toBe("/venues")
+      screen.getByRole("link", { name: "Browse venues" })
+    ).toHaveAttribute("href", "/venues")
   })
 })
-
-function getLinkByHref(href: string): HTMLAnchorElement | undefined {
-  return screen
-    .getAllByRole<HTMLAnchorElement>("link")
-    .find((link) => link.getAttribute("href") === href)
-}
