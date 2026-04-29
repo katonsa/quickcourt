@@ -17,6 +17,7 @@ if (appDatabaseUrl && isSameDatabase(appDatabaseUrl, testDatabaseUrl)) {
 
 process.env.APP_ENV = "test"
 process.env.DATABASE_URL = testDatabaseUrl.href
+delete process.env.DATABASE_URL_TEST
 
 function readRequiredPostgresUrl(name: string, value: string | undefined): URL {
   if (!value?.trim()) {
