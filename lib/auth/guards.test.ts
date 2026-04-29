@@ -95,6 +95,13 @@ describe("route guard response helpers", () => {
     expect(mocks.requireUser).toHaveBeenCalledTimes(1)
   })
 
+  it("requireUserForRoute redirects authentication failures to sign in", async () => {
+    mocks.requireUser.mockRejectedValue(new AuthenticationRequiredError())
+
+    await expect(requireUserForRoute()).rejects.toBeInstanceOf(TestRedirectError)
+    expect(mocks.redirect).toHaveBeenCalledWith(SIGN_IN_PATH)
+  })
+
   it("requireAdminForRoute calls requireAdmin and returns the result", async () => {
     const result = { user: { id: "admin-1", role: "admin" } }
     mocks.requireAdmin.mockResolvedValue(result)
@@ -129,6 +136,19 @@ describe("route guard response helpers", () => {
     expect(mocks.requireAnyOrganizationMember).toHaveBeenCalledWith(undefined)
   })
 
+  it("requireAnyOrganizationMemberForRoute passes options to the access helper", async () => {
+    const options = { organizationId: "org-1" }
+    const result = {
+      user: { id: "member-user" },
+      membership: { id: "member-1", organizationId: "org-1" },
+      memberships: [{ id: "member-1", organizationId: "org-1" }],
+    }
+    mocks.requireAnyOrganizationMember.mockResolvedValue(result)
+
+    await expect(requireAnyOrganizationMemberForRoute(options)).resolves.toBe(result)
+    expect(mocks.requireAnyOrganizationMember).toHaveBeenCalledWith(options)
+  })
+
   it("requireAnyOrganizationMemberForRoute redirects authentication failures", async () => {
     mocks.requireAnyOrganizationMember.mockRejectedValue(new AuthenticationRequiredError())
 
@@ -156,6 +176,15 @@ describe("route guard response helpers", () => {
 
     await expect(requireOrganizationOwnerForRoute(options)).resolves.toBe(result)
     expect(mocks.requireOrganizationOwner).toHaveBeenCalledWith(options)
+  })
+
+  it("requireOrganizationOwnerForRoute redirects authentication failures to sign in", async () => {
+    mocks.requireOrganizationOwner.mockRejectedValue(new AuthenticationRequiredError())
+
+    await expect(requireOrganizationOwnerForRoute()).rejects.toBeInstanceOf(
+      TestRedirectError
+    )
+    expect(mocks.redirect).toHaveBeenCalledWith(SIGN_IN_PATH)
   })
 
   it("requireOrganizationOwnerForRoute redirects access failures to forbidden", async () => {

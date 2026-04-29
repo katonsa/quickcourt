@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server"
 import {
   getRedirectUrl,
-  unstable_doesMiddlewareMatch as unstable_doesProxyMatch,
+  unstable_doesMiddlewareMatch,
 } from "next/experimental/testing/server"
 import { describe, expect, it } from "vitest"
 
@@ -11,15 +11,20 @@ import {
 } from "@/lib/auth/paths"
 import { config, proxy } from "@/proxy"
 
+const doesProxyMatch = unstable_doesMiddlewareMatch
+
 describe("proxy optimistic auth redirect", () => {
   it("matches protected dashboard and admin paths only", () => {
-    expect(unstable_doesProxyMatch({ config, url: "/dashboard" })).toBe(true)
-    expect(unstable_doesProxyMatch({ config, url: "/dashboard/venue" })).toBe(true)
-    expect(unstable_doesProxyMatch({ config, url: "/admin" })).toBe(true)
-    expect(unstable_doesProxyMatch({ config, url: "/venues" })).toBe(false)
-    expect(unstable_doesProxyMatch({ config, url: "/api/auth/get-session" })).toBe(
-      false
-    )
+    expect(doesProxyMatch({ config, url: "/dashboard" })).toBe(true)
+    expect(doesProxyMatch({ config, url: "/dashboard/venue" })).toBe(true)
+    expect(doesProxyMatch({ config, url: "/dashboard/bookings" })).toBe(true)
+    expect(doesProxyMatch({ config, url: "/dashboard/venue/settings" })).toBe(true)
+    expect(doesProxyMatch({ config, url: "/admin" })).toBe(true)
+    expect(doesProxyMatch({ config, url: "/admin/users" })).toBe(true)
+    expect(doesProxyMatch({ config, url: "/venues" })).toBe(false)
+    expect(doesProxyMatch({ config, url: "/sign-in" })).toBe(false)
+    expect(doesProxyMatch({ config, url: "/forbidden" })).toBe(false)
+    expect(doesProxyMatch({ config, url: "/api/auth/get-session" })).toBe(false)
   })
 
   it("redirects requests without a session cookie to sign in with a return target", () => {

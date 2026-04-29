@@ -31,6 +31,8 @@ describe("protected route layouts", () => {
 
     expect(result.props.children).toContain(children)
     expect(guardMocks.requireUserForRoute).toHaveBeenCalledTimes(1)
+    expect(guardMocks.requireAdminForRoute).not.toHaveBeenCalled()
+    expect(guardMocks.requireAnyOrganizationMemberForRoute).not.toHaveBeenCalled()
   })
 
   it("guards the admin route group with admin access", async () => {
@@ -46,6 +48,8 @@ describe("protected route layouts", () => {
 
     expect(result.props.children).toBe(children)
     expect(guardMocks.requireAdminForRoute).toHaveBeenCalledTimes(1)
+    expect(guardMocks.requireUserForRoute).not.toHaveBeenCalled()
+    expect(guardMocks.requireAnyOrganizationMemberForRoute).not.toHaveBeenCalled()
   })
 
   it("guards the venue dashboard route with organization membership access", async () => {
@@ -74,5 +78,24 @@ describe("protected route layouts", () => {
     expect(
       guardMocks.requireAnyOrganizationMemberForRoute
     ).toHaveBeenCalledTimes(1)
+    expect(guardMocks.requireUserForRoute).not.toHaveBeenCalled()
+    expect(guardMocks.requireAdminForRoute).not.toHaveBeenCalled()
+  })
+
+  it("does not grant venue dashboard access through the admin route guard", async () => {
+    const guardError = new Error("Organization membership is required.")
+    guardMocks.requireAnyOrganizationMemberForRoute.mockRejectedValue(guardError)
+    guardMocks.requireAdminForRoute.mockResolvedValue({
+      user: {
+        role: "admin",
+      },
+    })
+
+    await expect(VenueDashboardLayout({ children: "venue" })).rejects.toBe(guardError)
+
+    expect(
+      guardMocks.requireAnyOrganizationMemberForRoute
+    ).toHaveBeenCalledTimes(1)
+    expect(guardMocks.requireAdminForRoute).not.toHaveBeenCalled()
   })
 })
