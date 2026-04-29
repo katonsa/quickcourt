@@ -15,7 +15,7 @@ User can register, verify/recover account, login, logout, and access protected s
 Admin can be bootstrapped through seed/config.
 Organization plugin is installed and membership-aware access helpers exist.
 Route guards can distinguish user dashboard, venue dashboard, and admin dashboard access.
-The app has database, logging, env validation, error handling, and CI/test foundations.
+The app has database, logging, env validation, error handling, and local test foundations.
 ```
 
 ## Scope
@@ -36,7 +36,7 @@ Phase 1 includes:
 - Route guards and access helpers for `/dashboard`, `/dashboard/venue`, and `/admin`.
 - Public, user dashboard, venue dashboard, admin, auth, and error shell layouts.
 - Structured logging and global error handling.
-- Testing and CI harness.
+- Testing harness.
 - Phase 1 behavior test coverage.
 
 ## Out of Scope
@@ -74,7 +74,7 @@ Important Phase 1 decisions:
 - P1-03 uses PostgreSQL 17 and Prisma v7 with a three-step migration sequence: extensions, full domain schema, then PostgreSQL-specific constraints.
 - Runtime Prisma access lives in `lib/db.ts`; the generated client output is `generated/prisma`.
 - `DATABASE_URL_TEST` is the canonical integration test database URL and must differ from `DATABASE_URL`.
-- P1-07 requires a DB integration harness: unit tests stay DB-free, DB-backed tests use `*.integration.test.ts`, and CI runs them against PostgreSQL.
+- P1-07 requires a DB integration harness: unit tests stay DB-free and DB-backed tests use `*.integration.test.ts`. A committed CI workflow is deferred outside Phase 1.
 - Development/test seeding may create sample organization membership data, but credential creation stays owned by Better Auth.
 
 ## Status Workflow
@@ -100,7 +100,7 @@ Recommended execution order:
 4. [`P1-04 Auth & Account Foundation`](./tasks/04-auth-account-foundation.md)
 5. [`P1-05 Organization Access & Route Guards`](./tasks/05-organization-access-route-guards.md)
 6. [`P1-06 Auth UI & Shell Layouts`](./tasks/06-auth-ui-and-shell-layouts.md)
-7. [`P1-07 Testing & CI Harness`](./tasks/07-testing-ci-foundation.md)
+7. [`P1-07 Testing Harness`](./tasks/07-testing-ci-foundation.md)
 8. [`P1-08 Phase 1 Behavior Test Coverage`](./tasks/08-phase-1-behavior-test-coverage.md)
 
 Some work can run in parallel after P1-01, but auth, organization access, and UI shells should remain dependency-aware.
@@ -111,7 +111,7 @@ P1-07 may start once the database foundation exists; P1-08 is the final Phase 1 
 Phase 1 is done when:
 
 - All task specs in [`breakdown.md`](./breakdown.md) are `Done`.
-- Typecheck, lint, unit tests, DB integration harness tests, and migration verification pass locally and in CI.
+- Typecheck, lint, unit tests, DB integration harness tests, and migration verification pass locally.
 - Auth account flows are implemented or explicitly mocked according to environment rules.
 - Auth rate limiting is configured through Better Auth.
 - Resend integration exists behind an email sender abstraction.

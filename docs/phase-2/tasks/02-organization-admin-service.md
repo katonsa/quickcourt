@@ -28,7 +28,7 @@ QuickCourt does not allow self-service owner registration. A Super Admin creates
 
 - P1-04 Auth & Account Foundation.
 - P1-05 Organization Access & Route Guards.
-- Phase 1 fully `Done`, including P1-07 Testing & CI Harness and P1-08 Phase 1 Behavior Test Coverage.
+- Phase 1 fully `Done`, including P1-07 Testing Harness and P1-08 Phase 1 Behavior Test Coverage.
 
 ## Implementation Steps
 

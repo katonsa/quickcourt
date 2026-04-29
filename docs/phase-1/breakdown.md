@@ -21,7 +21,7 @@
 | P1-04 | Auth & Account Foundation                  |       P0 | Done        | P1-02, P1-03               | [04-auth-account-foundation.md](./tasks/04-auth-account-foundation.md)                                 | Better Auth email/password, admin plugin, org plugin, account recovery, Resend fallback, rateLimit | Auth config smoke, P1-08 behavior tests   |
 | P1-05 | Organization Access & Route Guards         |       P0 | Done        | P1-04                      | [05-organization-access-route-guards.md](./tasks/05-organization-access-route-guards.md)               | Access helpers and route guards for user, venue org member, and admin                              | Access helper tests, guard behavior tests |
 | P1-06 | Auth UI & Shell Layouts                    |       P0 | Done        | P1-04, P1-05               | [06-auth-ui-and-shell-layouts.md](./tasks/06-auth-ui-and-shell-layouts.md)                             | Auth pages, dashboard shells, forbidden/unauthorized/error UI                                      | Component/page smoke tests where feasible |
-| P1-07 | Testing & CI Harness                       |       P0 | In Progress | P1-01, P1-02, P1-03        | [07-testing-ci-foundation.md](./tasks/07-testing-ci-foundation.md)                                     | Vitest, unit test scripts, required DB integration harness, CI pipeline                            | CI passes typecheck/lint/unit/integration |
+| P1-07 | Testing Harness                            |       P0 | Done        | P1-01, P1-02, P1-03        | [07-testing-ci-foundation.md](./tasks/07-testing-ci-foundation.md)                                     | Vitest, unit test scripts, required DB integration harness, local verification                     | Typecheck, lint, unit, integration        |
 | P1-08 | Phase 1 Behavior Test Coverage             |       P0 | Todo        | P1-04, P1-05, P1-06, P1-07 | [08-phase-1-behavior-test-coverage.md](./tasks/08-phase-1-behavior-test-coverage.md)                   | Auth, email, access guard, and shell smoke coverage for Phase 1 behavior                           | Auth/access/page smoke tests              |
 
 ## Workstream View
@@ -30,7 +30,7 @@
 
 - P1-01 App Foundation
 - P1-02 Env, Config, Observability, Error Handling
-- P1-07 Testing & CI Harness
+- P1-07 Testing Harness
 - P1-08 Phase 1 Behavior Test Coverage
 
 ### Data
@@ -70,7 +70,7 @@ Before marking Phase 1 as `Done`, confirm:
 - [x] Resend is behind an email sender abstraction.
 - [x] Organization access checks use membership, not `User.role`.
 - [x] Admin access uses `User.role === "admin"` or equivalent Better Auth Admin Plugin role field.
-- [ ] Tests and CI pass.
+- [ ] Local tests and verification pass.
 
 ## Status and Dependency Notes
 
@@ -93,5 +93,5 @@ Before marking Phase 1 as `Done`, confirm:
 - P1-06 Slice 11 has enabled TSX unit tests and added focused auth UI smoke coverage for stable auth shell and verification notice components. Broader browser/E2E auth coverage remains owned by P1-08.
 - P1-06 Slice 12 has verified typecheck, lint, unit tests, production build with network permission for fonts, and a local route smoke against the running dev server on port 3000.
 - P1-06 is `Done` based on implemented auth UI routes, public/user/venue/admin shells, denial/loading/error states, focused validation and auth UI smoke tests, typecheck, lint, unit tests, production build, and local route smoke. Final shared auth/page/shell behavior coverage remains owned by P1-08.
-- P1-07 has completed the local Vitest, foundation env tests, and DB integration harness slices. CI workflow work is deferred, so P1-07 remains `In Progress` until CI is added and verified.
+- P1-07 is `Done` based on completed local Vitest harness, foundation env tests, DB integration harness, documented local verification flow, and decision D-P1-017 deferring committed CI workflow outside Phase 1.
 - Testing harness work can start before all Phase 1 behavior exists, but Phase 1 behavior coverage cannot be marked `Done` until the auth, access, and shell tasks it covers are implemented.

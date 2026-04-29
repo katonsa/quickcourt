@@ -66,13 +66,13 @@ These rules apply to all Phase 1 task specs. They are intended for both human de
 ## Testing
 
 - Add or update tests when implementing behavior that can regress.
-- Phase 1 tests should focus on config, env validation, auth/access helpers, email sender behavior, migration verification, and CI reliability.
+- Phase 1 tests should focus on config, env validation, auth/access helpers, email sender behavior, migration verification, and local harness reliability.
 - Unit tests must not require a database.
 - Shared Vitest settings must live in `vitest.config.ts`; unit tests use `vitest.config.unit.ts`; DB integration tests use `vitest.config.integration.ts`.
 - DB-backed tests must use `*.integration.test.ts`, run migrations through `npm run test:db:migrate`, run tests through `npm run test:integration`, and target `DATABASE_URL_TEST`.
-- `npm run test` must stay unit-only so local and CI feedback does not accidentally depend on PostgreSQL.
+- `npm run test` must stay unit-only so local feedback does not accidentally depend on PostgreSQL.
 - Do not add booking/payment/ledger tests in Phase 1 except as placeholders in later milestone docs.
-- CI must run typecheck, lint, unit tests, and the P1-07 DB integration harness with a PostgreSQL service.
+- Committed CI workflow is deferred outside Phase 1 by D-P1-017.
 
 ## Documentation
 

@@ -1,12 +1,12 @@
-# P1-07 — Testing & CI Harness
+# P1-07 — Testing Harness
 
 ## Goal
 
-Set up the reusable testing harness and CI pipeline so Phase 1 behavior tests and later transactional marketplace features can be implemented safely.
+Set up the reusable local testing harness so Phase 1 behavior tests and later transactional marketplace features can be implemented safely.
 
 ## Context
 
-QuickCourt's later milestones include concurrency-sensitive booking, payment webhooks, ledger entries, refund handling, and authorization rules. Phase 1 should establish the test runner, database testing convention, and CI structure before those critical paths are built.
+QuickCourt's later milestones include concurrency-sensitive booking, payment webhooks, ledger entries, refund handling, and authorization rules. Phase 1 should establish the test runner and database testing convention before those critical paths are built.
 
 This task owns the harness. P1-08 owns the final Phase 1 behavior coverage for auth, email sender selection, access helpers, route guards, and shell smoke paths.
 
@@ -19,7 +19,6 @@ This task owns the harness. P1-08 owns the final Phase 1 behavior coverage for a
 - Basic unit test examples.
 - Env validation tests that prove config parsing works in the test harness.
 - Migration/constraint verification command.
-- CI workflow for typecheck, lint, unit tests, and DB integration harness tests.
 - Documentation for running tests locally.
 
 ## Out of Scope
@@ -30,6 +29,7 @@ This task owns the harness. P1-08 owns the final Phase 1 behavior coverage for a
 - Browser matrix testing.
 - Load testing.
 - Production monitoring.
+- Committed CI workflow.
 - Final auth/access/shell behavior coverage.
 
 ## Dependencies
@@ -62,21 +62,12 @@ Can be partially started after P1-01 and completed after P1-03.
 9. Add at least one basic harness test for a small foundation unit, such as public env parsing or logger redaction config.
 10. Add a required DB integration harness convention and minimal DB smoke test.
 11. Keep migration/constraint verification command documented.
-12. Add CI workflow:
-
-- install dependencies
-- typecheck
-- lint
-- unit test
-- DB integration harness test with PostgreSQL service
-- optional build
-
-13. Document local test commands.
-14. Document that auth, email sender, access helper, guard, and shell behavior tests are completed in P1-08.
+12. Document local test commands.
+13. Document that auth, email sender, access helper, guard, and shell behavior tests are completed in P1-08.
 
 ## Implementation Slices
 
-P1-07 should be implemented in small slices because it touches tooling, scripts, CI, docs, and early tests. Keep this task focused on the reusable harness. Do not pull full auth/access/shell behavior coverage forward from P1-08.
+P1-07 should be implemented in small slices because it touches tooling, scripts, docs, and early tests. Keep this task focused on the reusable harness. Do not pull full auth/access/shell behavior coverage forward from P1-08.
 
 ### Slice 1 — Vitest Harness
 
@@ -139,34 +130,13 @@ Suggested commit:
 test: add database integration harness
 ```
 
-### Slice 4 — CI Workflow
-
-- Add `.github/workflows/ci.yml`.
-- Minimum CI steps:
-  - `npm ci`
-  - `npm run typecheck`
-  - `npm run lint`
-  - `npm run test`
-  - prepare PostgreSQL test database
-  - `npm run test:integration`
-- CI env must use non-production values and no production secrets.
-- Add a PostgreSQL service for the required DB integration harness job.
-- Migration and constraint verification may run in the same DB job or a separate DB verification job.
-- `npm run build` may be optional or a separate job because the app uses `next/font/google` and build requires network access for font fetching.
-
-Suggested commit:
-
-```text
-ci: add foundation validation workflow
-```
-
-### Slice 5 — Docs and Status
+### Slice 4 — Docs and Status
 
 - Update local testing documentation with:
   - unit test commands.
   - required DB integration harness commands.
   - migration/constraint verification command.
-  - CI behavior.
+  - CI deferral note.
 - Document clearly that P1-08 owns final behavior coverage for auth config, email sender selection, access helpers, route guards, and shell smoke paths.
 - Update `breakdown.md` only after acceptance criteria and verification pass.
 
@@ -181,12 +151,13 @@ Current status:
 - Slice 1 Vitest harness is complete.
 - Slice 2 foundation env tests are complete.
 - Slice 3 DB integration harness is complete.
-- Slice 4 CI workflow is deferred, so P1-07 must not be marked `Done` yet.
-- Slice 5 documentation reflects the completed local harness and the deferred CI status.
+- Slice 4 documentation reflects the completed local harness and the deferred CI status.
+- CI workflow is deferred outside Phase 1 by D-P1-017.
+- P1-07 is `Done` based on completed local harness verification.
 
 ## Boundary With P1-08
 
-P1-07 owns the runner, conventions, foundational env/config tests, required DB integration harness, and CI pipeline.
+P1-07 owns the runner, conventions, foundational env/config tests, and required DB integration harness.
 
 P1-08 owns the final behavior coverage for:
 
@@ -215,9 +186,9 @@ Do not block P1-07 on P1-05 or P1-06 behavior that does not exist yet.
 - Any command that applies migrations, seeds, truncates, or resets data for tests must target the test database, not the development database.
 - Commands that target the integration test database may map `DATABASE_URL` to `DATABASE_URL_TEST` only for that subprocess.
 
-## CI Design Notes
+## Deferred CI Notes
 
-The required CI foundation is:
+Committed CI workflow is deferred outside Phase 1 by D-P1-017. When CI is added later, the recommended foundation is:
 
 ```text
 npm ci
@@ -227,7 +198,7 @@ npm run test
 npm run test:integration
 ```
 
-Required DB CI additions:
+Recommended DB CI additions:
 
 - PostgreSQL service for constraint verification and DB-backed tests.
 - `npm run db:generate`.
@@ -252,7 +223,6 @@ test/setup.ts
 test/integration/setup.ts
 **/*.test.ts
 **/*.integration.test.ts
-.github/workflows/ci.yml
 package.json
 prisma/verify-db-constraints.sql
 docs/testing-strategy.md
@@ -270,15 +240,12 @@ docs/testing-strategy.md
 - [x] `npm run test:db:migrate` applies migrations to `DATABASE_URL_TEST`.
 - [x] `npm run test:integration` runs DB-backed integration tests.
 - [x] `npm run test:all` runs unit tests and integration tests.
-- [ ] `npm run typecheck` runs in CI.
-- [ ] `npm run lint` runs in CI.
-- [ ] DB integration harness runs in CI with a PostgreSQL service.
 - [x] Env validation tests exist.
 - [x] Basic example tests prove the harness works.
 - [x] Test DB convention is documented.
 - [x] Minimal DB integration smoke test exists and uses `DATABASE_URL_TEST`.
 - [x] Migration/constraint verification command is documented.
-- [ ] CI workflow is documented and committed.
+- [x] CI workflow is explicitly deferred outside Phase 1 by D-P1-017.
 - [x] Phase 1 docs explain how to run tests locally.
 - [x] P1-08 behavior coverage dependency is documented.
 
@@ -327,23 +294,21 @@ npm run build                                      # not run; requires network f
 DATABASE_URL=postgresql://postgres:postgres@localhost:5433/quickcourt_test npm run db:verify-constraints    # passed
 ```
 
-CI workflow verification is deferred with Slice 4.
+CI workflow verification is deferred outside Phase 1 by D-P1-017.
 
 ## Edge Cases
 
-- CI may not have a PostgreSQL service by default.
 - DB integration tests must run separately from unit tests.
-- Environment variables in CI must not use production secrets.
 - P1-03 reserves `DATABASE_URL_TEST` for the DB integration test harness. Do not configure it to the same database as `DATABASE_URL`.
 - This task can be `Done` before auth/access/page behavior exists, as long as P1-08 remains open for that coverage.
-- Slice 4 CI workflow is deferred, so the task remains open even though the local harness slices are complete.
+- CI workflow is deferred outside Phase 1 and must not block P1-07 completion.
 
 ## Risks
 
 - Pulling behavior tests that depend on P1-04/P1-05/P1-06 into the harness task too early.
 - Making DB tests flaky due to shared state.
-- Deferring CI until later, causing early regressions if local verification is not run consistently.
+- Deferring CI until later can allow regressions if local verification is not run consistently.
 
 ## Done When
 
-The repository has a working test runner, documented local test flow, required DB integration harness, and CI that validates the Phase 1 foundation harness.
+The repository has a working test runner, documented local test flow, required DB integration harness, and completed local verification for the Phase 1 foundation harness.

@@ -108,7 +108,7 @@ Detailed Phase 1 working docs and implementation task specs live in [`docs/phase
 - UI library (shadcn/ui) + shell layouts: public marketplace `/venues`, user dashboard `/dashboard`, venue management `/dashboard/venue`, admin `/admin`.
 - Structured logging (Pino) — setup dari awal agar semua service layer konsisten.
 - Global error boundary + route group error pages.
-- Testing infrastructure (Vitest + test DB) dan CI foundation untuk lint/typecheck/test.
+- Testing infrastructure lokal (Vitest + test DB) untuk lint/typecheck/test; committed CI workflow deferred ke hardening/release readiness.
 
 ### Milestone 2 — Organization & Venue Profile Onboarding
 
@@ -229,7 +229,7 @@ Detailed Phase 1 working docs and implementation task specs live in [`docs/phase
 - **Venue approval/suspension test** (status lifecycle).
 - **Custom non-auth rate limiting** (@upstash/ratelimit) untuk endpoint kritis seperti booking create dan webhook jika diperlukan.
 - **Cron job testing** (booking expiry sweep, auto-complete, ledger settlement, reminder — idempotency).
-- CI/CD hardening and release gates — memperketat pipeline yang sudah dibuat di Milestone 1.
+- CI/CD foundation, hardening, and release gates — menambahkan pipeline committed lalu memperketat gate rilis.
 
 > [!NOTE]
 > QuickCourt menggunakan **Hybrid TDD** — test ditulis sebelum implementasi service layer.

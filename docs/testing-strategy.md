@@ -731,7 +731,7 @@ Dengan TDD, test tidak diperlakukan sebagai pekerjaan terpisah dari implementasi
 
 | Milestone                                                   | Test yang Ditulis (TDD)                                                                                                                   |
 | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| **Milestone 1 — Foundation**                                | Setup Vitest, unit-only default test command, required DB integration harness, CI foundation, env validation, auth config, access helpers |
+| **Milestone 1 — Foundation**                                | Setup Vitest, unit-only default test command, required DB integration harness, env validation, auth config, access helpers                |
 | **Milestone 2 — Organization & Venue Profile Onboarding**   | TDD: org invite/accept, venue profile draft, permission, bank masking/verification                                                        |
 | **Milestone 3 — Court, Schedule, Pricing & Venue Approval** | TDD: court CRUD, slot calculator, price calculator, operating hours, approval lifecycle                                                   |
 | **Milestone 4 — Marketplace & Booking Core**                | TDD: booking creation, anti double-booking, state machine, cancellation policy snapshot                                                   |
@@ -844,9 +844,9 @@ jobs:
           path: playwright-report/
 ```
 
-P1-07 requires the `unit` and `db-integration` jobs. The `e2e` job is a later milestone/release-readiness layer and should not block the Phase 1 harness unless the project explicitly enables E2E in CI.
+P1-07 does not require a committed CI workflow. The recommended future CI foundation is the `unit` and `db-integration` jobs. The `e2e` job is a later milestone/release-readiness layer and should not block the Phase 1 harness unless the project explicitly enables E2E in CI.
 
-Current status: the local Vitest and DB integration harness commands are implemented. Unit tests include `*.test.ts` and `*.test.tsx` files, with P1-06 adding focused auth UI smoke coverage. The GitHub Actions workflow is deferred with P1-07 Slice 4, so the CI example above is still the target design rather than a committed workflow. Broader auth page and protected shell behavior coverage remains scoped to P1-08.
+Current status: the local Vitest and DB integration harness commands are implemented. Unit tests include `*.test.ts` and `*.test.tsx` files, with P1-06 adding focused auth UI smoke coverage. The GitHub Actions workflow is deferred outside Phase 1 by D-P1-017, so the CI example above is still the target design rather than a committed workflow. Broader auth page and protected shell behavior coverage remains scoped to P1-08.
 
 ### Pipeline Rules
 

@@ -6,11 +6,11 @@ Add the final Phase 1 behavior coverage for auth, email sender selection, access
 
 ## Context
 
-P1-07 creates the test runner, database convention, scripts, and CI pipeline. This task uses that harness to cover the behavior introduced by P1-04, P1-05, and P1-06 without blocking earlier CI setup work.
+P1-07 creates the test runner, database convention, and scripts. This task uses that harness to cover the behavior introduced by P1-04, P1-05, and P1-06 without depending on a committed CI workflow.
 
 P1-06 added focused validation and component smoke coverage for stable auth UI pieces, but intentionally deferred broader auth page, protected shell, and browser/E2E behavior coverage to P1-08.
 
-P1-08 may start locally before the P1-07 CI workflow slice is complete. It must not be marked `Done` until P1-07 CI is complete and the P1-08 coverage has been verified through the final required commands.
+P1-08 may start once the P1-07 local harness is complete. It must not be marked `Done` until the P1-08 coverage has been verified through the final required local commands.
 
 ## Scope
 
@@ -37,7 +37,7 @@ P1-08 may start locally before the P1-07 CI workflow slice is complete. It must 
 - P1-04 Auth & Account Foundation.
 - P1-05 Organization Access & Route Guards.
 - P1-06 Auth UI & Shell Layouts.
-- P1-07 Testing & CI Harness.
+- P1-07 Testing Harness.
 
 ## Reviewable Implementation Slices
 
@@ -54,7 +54,7 @@ P1-08 may start locally before the P1-07 CI workflow slice is complete. It must 
   - `npm run test -- lib/auth.test.ts`
   - `npm run test`
 - Suggested commit message: `test(auth): add auth config smoke coverage`
-- Safe before P1-07 CI completion: yes, if it remains unit-only and DB-free.
+- CI note: committed CI is deferred by D-P1-017; this slice is verified locally and must remain unit-only and DB-free.
 - Stop point: pause for review after this slice because auth config mocking can become brittle if it over-asserts Better Auth internals.
 
 ### Slice 2 — Email Sender and Template Unit Coverage
@@ -71,7 +71,7 @@ P1-08 may start locally before the P1-07 CI workflow slice is complete. It must 
   - `npm run test -- lib/email`
   - `npm run test`
 - Suggested commit message: `test(email): cover auth sender selection and templates`
-- Safe before P1-07 CI completion: yes.
+- CI note: committed CI is deferred by D-P1-017; this slice is verified locally.
 - Stop point: pause for review after this slice to confirm no production email or secret assumptions leaked into tests.
 
 ### Slice 3 — Access and Route Guard Gap Fill
@@ -89,7 +89,7 @@ P1-08 may start locally before the P1-07 CI workflow slice is complete. It must 
   - `npm run test -- lib/auth proxy.test.ts test/auth/protected-layouts.test.ts`
   - `npm run test`
 - Suggested commit message: `test(auth): strengthen access guard behavior coverage`
-- Safe before P1-07 CI completion: yes.
+- CI note: committed CI is deferred by D-P1-017; this slice is verified locally.
 - Stop point: pause for review after this slice because it defines the policy boundary P1-08 should not change.
 
 ### Slice 4 — DB Integration Membership Behavior
@@ -115,7 +115,7 @@ P1-08 may start locally before the P1-07 CI workflow slice is complete. It must 
   - `DATABASE_URL_TEST` must point at the local test database.
   - `DATABASE_URL` must not equal `DATABASE_URL_TEST`.
 - Suggested commit message: `test(auth): add organization access integration coverage`
-- Safe before P1-07 CI completion: yes for local development, but do not treat CI coverage as satisfied until P1-07 CI lands.
+- CI note: committed CI is deferred by D-P1-017; this slice relies on local DB integration verification.
 - Stop point: pause for review after this slice before adding more integration tests, because DB fixture shape and cleanup strategy should stay stable.
 
 ### Slice 5 — Auth Pages and Shell Smoke Coverage
@@ -132,7 +132,7 @@ P1-08 may start locally before the P1-07 CI workflow slice is complete. It must 
   - `npm run test -- components/auth test/auth`
   - `npm run test`
 - Suggested commit message: `test(auth): add auth page and shell smoke coverage`
-- Safe before P1-07 CI completion: yes.
+- CI note: committed CI is deferred by D-P1-017; this slice is verified locally.
 - Stop point: pause for review after this slice before final documentation/status updates.
 
 ### Slice 6 — Coverage Documentation and P1-08 Status
@@ -142,8 +142,8 @@ P1-08 may start locally before the P1-07 CI workflow slice is complete. It must 
 - Acceptance criteria:
   - Documents local Vitest coverage added in P1-08.
   - Documents browser/E2E auth flows as deferred to the E2E milestone unless the project later enables E2E earlier.
-  - Keeps P1-08 from being marked `Done` while P1-07 CI is incomplete.
-  - Marks P1-08 complete only after P1-07 CI is complete and all final verification commands pass.
+  - Keeps P1-08 from being marked `Done` until all final local verification commands pass.
+  - Documents that committed CI is deferred outside Phase 1 by D-P1-017 and is not a P1-08 acceptance criterion.
 - Verification commands:
   - `npm run test`
   - `npm run typecheck`
@@ -155,7 +155,7 @@ P1-08 may start locally before the P1-07 CI workflow slice is complete. It must 
   - `npm run test:integration`
   - `npm run test:db:down`
 - Suggested commit message: `docs(testing): document P1-08 behavior coverage`
-- Safe before P1-07 CI completion: partial. Coverage notes are safe; final `Done` status is deferred.
+- CI note: committed CI is deferred by D-P1-017; final `Done` status depends on local verification.
 - Stop point: final review before any status change in `breakdown.md`.
 
 ## Files / Modules
@@ -189,7 +189,8 @@ docs/phase-1/breakdown.md
 - [ ] Any deferred behavior coverage is documented with a reason.
 - [ ] `npm run test` remains DB-free.
 - [ ] DB-backed tests, if added, are `*.integration.test.ts` and pass through `npm run test:integration`.
-- [ ] P1-08 is not marked `Done` before P1-07 CI is complete unless project sequencing is explicitly changed.
+- [ ] P1-08 is not marked `Done` before required local verification commands pass.
+- [ ] Committed CI workflow is treated as deferred outside Phase 1, not as a P1-08 acceptance criterion.
 
 ## Test Plan
 
@@ -231,4 +232,4 @@ Set `DATABASE_URL_TEST` to the local test database before running DB-backed test
 
 ## Done When
 
-Phase 1 has local Vitest behavior coverage for auth, email sender selection, access helpers, guards, and shell smoke paths where feasible; DB-backed membership behavior uses the integration harness; browser/E2E gaps are explicitly documented; and P1-07 CI is complete.
+Phase 1 has local Vitest behavior coverage for auth, email sender selection, access helpers, guards, and shell smoke paths where feasible; DB-backed membership behavior uses the integration harness; browser/E2E gaps are explicitly documented; and required local verification passes.
