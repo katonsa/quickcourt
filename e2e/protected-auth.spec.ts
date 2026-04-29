@@ -6,6 +6,7 @@ import { expect, test, type APIRequestContext, type Page } from "@playwright/tes
 const testRunId = `e2e-${randomUUID()}`
 const testDatabaseUrl = readTestDatabaseUrl()
 const db = new Client({ connectionString: testDatabaseUrl.href })
+const createdOrganizationIds = new Set<string>()
 const createdUserIds = new Set<string>()
 const createdEmails = new Set<string>()
 
@@ -62,6 +63,26 @@ test.describe("protected auth routes", () => {
     ).toBeVisible()
   })
 
+  test("allows a verified venue owner to open the venue dashboard", async ({
+    page,
+    request,
+  }) => {
+    const user = await createVerifiedUser(request, { role: "user" })
+    const workspace = await createVenueWorkspaceForUser(user.id, {
+      memberRole: "owner",
+    })
+
+    await signInThroughUi(page, user, "/dashboard/venue")
+
+    await expect(page).toHaveURL(/\/dashboard\/venue$/)
+    await expect(
+      page.getByRole("heading", { name: workspace.venueName })
+    ).toBeVisible()
+    await expect(
+      page.getByRole("heading", { name: "Workspace overview" })
+    ).toBeVisible()
+  })
+
   test("denies venue dashboard access to an admin without membership", async ({
     page,
     request,
@@ -78,6 +99,7 @@ test.describe("protected auth routes", () => {
 })
 
 type TestUser = {
+  id: string
   email: string
   password: string
 }
@@ -118,7 +140,48 @@ async function createVerifiedUser(
   createdUserIds.add(userId)
   createdEmails.add(email)
 
-  return { email, password }
+  return { id: userId, email, password }
+}
+
+async function createVenueWorkspaceForUser(
+  userId: string,
+  options: { memberRole: "owner" }
+): Promise<{ organizationId: string; venueName: string }> {
+  const organizationId = uniqueId("org")
+  const organizationName = "E2E Owner Courts"
+  const organizationSlug = uniqueSlug("owner-courts")
+  const memberId = uniqueId("member")
+  const venueName = "E2E Owner Courts Arena"
+  const venueSlug = uniqueSlug("owner-courts-arena")
+
+  await db.query("BEGIN")
+
+  try {
+    await db.query(
+      `INSERT INTO "organization" ("id", "name", "slug", "createdAt")
+       VALUES ($1, $2, $3, NOW())`,
+      [organizationId, organizationName, organizationSlug]
+    )
+    await db.query(
+      `INSERT INTO "venues" ("organization_id", "name", "slug", "updated_at")
+       VALUES ($1, $2, $3, NOW())`,
+      [organizationId, venueName, venueSlug]
+    )
+    await db.query(
+      `INSERT INTO "member" ("id", "organizationId", "userId", "role", "createdAt")
+       VALUES ($1, $2, $3, $4, NOW())`,
+      [memberId, organizationId, userId, options.memberRole]
+    )
+
+    await db.query("COMMIT")
+  } catch (error) {
+    await db.query("ROLLBACK")
+    throw error
+  }
+
+  createdOrganizationIds.add(organizationId)
+
+  return { organizationId, venueName }
 }
 
 async function signInThroughUi(
@@ -133,12 +196,17 @@ async function signInThroughUi(
 }
 
 async function cleanupCreatedRows(): Promise<void> {
+  const organizationIds = [...createdOrganizationIds]
   const userIds = [...createdUserIds]
   const emails = [...createdEmails]
 
+  createdOrganizationIds.clear()
   createdUserIds.clear()
   createdEmails.clear()
 
+  await db.query(`DELETE FROM "organization" WHERE "id" = ANY($1::text[])`, [
+    organizationIds,
+  ])
   await db.query(`DELETE FROM "user" WHERE "id" = ANY($1::text[])`, [userIds])
   await db.query(
     `DELETE FROM "verification" WHERE "identifier" = ANY($1::text[])`,
@@ -148,6 +216,14 @@ async function cleanupCreatedRows(): Promise<void> {
 
 function uniqueEmail(role: "admin" | "user"): string {
   return `${testRunId}-${role}-${randomUUID()}@example.test`
+}
+
+function uniqueId(prefix: string): string {
+  return `${testRunId}-${prefix}-${randomUUID()}`
+}
+
+function uniqueSlug(prefix: string): string {
+  return `${prefix}-${randomUUID()}`
 }
 
 function readTestDatabaseUrl(): URL {
