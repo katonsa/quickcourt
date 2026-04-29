@@ -934,6 +934,7 @@ Aturan saldo:
 ### Bank Account
 
 - `VenueBankAccount.accountNumber` sebaiknya dienkripsi atau minimal dimasking di semua UI/log.
+- `VenueBankAccount.accountNumberLast4` disimpan untuk kebutuhan display, audit tersensor, dan verifikasi manual tanpa membuka nomor rekening penuh.
 - Hanya satu primary account per venue lewat partial unique index.
 - Perubahan rekening wajib masuk `AuditLog` dengan before/after yang sudah disensor.
 - Super Admin dapat melakukan verifikasi manual dengan audit log.

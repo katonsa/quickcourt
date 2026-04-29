@@ -18,6 +18,7 @@
 | [**Project Plan**](./project-plan.md)         | Success metrics, risiko, roadmap, milestone, keputusan MVP                                          |
 | [**Testing Strategy**](./testing-strategy.md) | Strategi testing, Hybrid TDD, test layer                                                            |
 | [**Phase 1 Docs**](./phase-1/README.md)       | Dokumen kerja dan task spec Foundation untuk AI/developer                                           |
+| [**Phase 2 Docs**](./phase-2/README.md)       | Dokumen kerja dan task spec Organization & Venue Profile Onboarding                                 |
 
 ---
 

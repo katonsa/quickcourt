@@ -657,17 +657,18 @@ model VenuePhoto {
 }
 
 model VenueBankAccount {
-  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  venueId           String    @map("venue_id") @db.Uuid
-  bankName          String    @map("bank_name")
-  bankCode          String?   @map("bank_code")
-  accountNumber     String    @map("account_number")
-  accountHolderName String    @map("account_holder_name")
-  isPrimary         Boolean   @default(false) @map("is_primary")
-  isVerified        Boolean   @default(false) @map("is_verified")
-  deletedAt         DateTime? @map("deleted_at") @db.Timestamptz(6)
-  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  venueId            String    @map("venue_id") @db.Uuid
+  bankName           String    @map("bank_name")
+  bankCode           String?   @map("bank_code")
+  accountNumber      String    @map("account_number")
+  accountNumberLast4 String?   @map("account_number_last4") @db.VarChar(4)
+  accountHolderName  String    @map("account_holder_name")
+  isPrimary          Boolean   @default(false) @map("is_primary")
+  isVerified         Boolean   @default(false) @map("is_verified")
+  deletedAt          DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   venue       Venue        @relation(fields: [venueId], references: [id], onDelete: Cascade)
   withdrawals Withdrawal[]
