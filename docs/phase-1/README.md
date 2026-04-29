@@ -6,6 +6,8 @@ Phase 1 establishes the technical, identity, and access-control foundation for Q
 
 QuickCourt is a transactional marketplace. Later milestones will depend on a reliable foundation for authentication, organization membership, route protection, database migration discipline, logging, testing, and operational guardrails.
 
+For current maintainer setup, verification, and deployment workflows, use [`../maintainer-guide.md`](../maintainer-guide.md). This phase folder remains the historical working spec and status record for Phase 1.
+
 ## Phase Objective
 
 By the end of Phase 1, the app must be able to support the following minimal vertical slice:

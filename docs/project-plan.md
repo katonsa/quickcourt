@@ -92,6 +92,12 @@
 
 Milestone berikut disusun agar tiap fase punya boundary yang jelas untuk dokumen kerja dan task spec. Test service-layer tetap ditulis sebagai bagian dari milestone terkait; Milestone 9 fokus pada hardening lintas area, E2E, dan release readiness.
 
+Current implementation status is tracked in the phase breakdown files:
+
+- Phase 1 Foundation is complete. See [`docs/phase-1/breakdown.md`](./phase-1/breakdown.md).
+- Phase 2 planning is complete, while implementation tasks remain planned until their statuses change. See [`docs/phase-2/breakdown.md`](./phase-2/breakdown.md).
+- Maintainer setup, verification, and deployment workflows live in [`docs/maintainer-guide.md`](./maintainer-guide.md).
+
 ### Milestone 1 — Foundation
 
 Detailed Phase 1 working docs and implementation task specs live in [`docs/phase-1/`](./phase-1/README.md).

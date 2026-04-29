@@ -6,6 +6,8 @@ Phase 2 turns the Phase 1 identity, organization, and route-guard foundation int
 
 QuickCourt does not allow users to self-promote into venue owners. Super Admin creates the Organization, invites an already-registered user as owner, and the owner completes the first venue draft profile.
 
+For current maintainer setup, verification, and deployment workflows, use [`../maintainer-guide.md`](../maintainer-guide.md). This phase folder is the working plan for Phase 2; check [`breakdown.md`](./breakdown.md) before treating any Phase 2 behavior as implemented.
+
 ## Phase Objective
 
 By the end of Phase 2, the app must support this vertical slice:

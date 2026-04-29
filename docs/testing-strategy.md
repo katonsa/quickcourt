@@ -26,6 +26,22 @@ QuickCourt adalah **marketplace transaksional** — bug pada booking, payment, a
 
 ## 2. Framework & Tooling
 
+### Current Repository Status
+
+Implemented today:
+
+- Unit tests use Vitest through `vitest.config.unit.ts`.
+- Integration tests use Vitest through `vitest.config.integration.ts` and a real PostgreSQL test database.
+- `npm run test` is DB-free and excludes `*.integration.test.ts`.
+- `npm run test:db:migrate` applies migrations to `DATABASE_URL_TEST`.
+- Phase 1 behavior coverage exists for auth config, email sender/template behavior, access helpers, route guards, auth pages, protected shells, and DB-backed organization membership behavior.
+
+Deferred:
+
+- A committed GitHub Actions workflow is deferred outside Phase 1 by D-P1-017.
+- Playwright/E2E setup is a later hardening/release-readiness layer unless a future task enables it earlier.
+- Booking, payment, webhook, ledger, refund, withdrawal, and staff operation tests are owned by later implementation milestones.
+
 ### 2.1 Pilihan Framework
 
 | Layer                       | Tool                         | Alasan                                                                  |
@@ -866,9 +882,10 @@ Deferred browser/E2E coverage:
 
 ### Pipeline Rules
 
-- **PR merge blocked** jika unit test atau DB integration harness gagal.
-- **E2E test** berjalan setelah unit/integration pass jika E2E CI sudah diaktifkan.
-- **Coverage report** di-upload sebagai artifact.
+- **Local merge readiness:** maintainer harus menjalankan unit test dan DB integration harness untuk perubahan yang menyentuh behavior, schema, auth, access, atau service layer.
+- **Future CI:** setelah CI diaktifkan, PR merge harus blocked jika unit test atau DB integration harness gagal.
+- **E2E test:** berjalan setelah unit/integration pass jika E2E CI sudah diaktifkan.
+- **Coverage report:** di-upload sebagai artifact setelah CI coverage workflow tersedia.
 
 ---
 

@@ -1,134 +1,123 @@
 # QuickCourt
 
-QuickCourt is a sports venue booking marketplace built with Next.js 16, React 19, TypeScript, Tailwind CSS, and shadcn/ui.
+QuickCourt is a sports venue booking marketplace for Indonesia. The current codebase is a Next.js 16 App Router application with React 19, TypeScript, Tailwind CSS, shadcn/ui, Better Auth, Prisma 7, PostgreSQL 17, Pino, and Vitest.
+
+## Current Status
+
+- Phase 1 Foundation is implemented and tested locally.
+- Phase 2 planning docs are present. Implementation tasks P2-02 through P2-14 are still planned unless their task status changes.
+- Booking, payment, ledger, refund, withdrawal, staff, and public marketplace completion remain later milestone work.
+
+For maintainer workflows, start with [docs/maintainer-guide.md](./docs/maintainer-guide.md). For the full documentation index, start with [docs/README.md](./docs/README.md).
 
 ## Project Structure
 
-- `app/` — App Router routes and layouts. This project uses the root `app` directory and does not use `/src`.
-- `components/` — Shared UI components.
-- `config/` — Configuration modules.
-- `lib/` — Shared utilities and future server/client helpers.
-- `docs/` — Product, technical, testing, and Phase 1 implementation documentation.
+| Path | Purpose |
+| --- | --- |
+| `app/` | Next.js App Router routes, route groups, layouts, error/loading UI, and route handlers. The project uses root `app/` and does not use `/src`. |
+| `components/` | Shared UI and feature components. |
+| `config/` | Server and client environment validation. |
+| `lib/` | Auth, database, logging, validation, email, access, and shared utilities. |
+| `prisma/` | Prisma schema, migrations, seed, and constraint verification SQL. |
+| `scripts/` | Operational and database helper scripts. |
+| `test/` | Unit/integration test setup and cross-cutting test suites. |
+| `docs/` | Product, technical, maintainer, testing, and phase implementation documentation. |
 
-## Commands
+## First-Time Setup
 
 ```bash
+npm ci
+cp .env.example .env
+npm run db:up
+npm run db:generate
+npm run db:migrate
+npm run db:verify-constraints
+npm run db:seed
 npm run dev
 ```
 
-Start the local development server.
+Open `http://localhost:3000` after the dev server starts.
 
-```bash
-npm run build
-```
+## Common Commands
 
-Create a production build.
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the local Next.js dev server. Next.js 16 uses Turbopack by default. |
+| `npm run build` | Create a production build. Requires network access because the app uses `next/font/google`. |
+| `npm run start` | Start the production server after a build. |
+| `npm run lint` | Run ESLint. Next.js 16 does not run lint automatically during `next build`. |
+| `npm run typecheck` | Run TypeScript type checking. |
+| `npm run format` | Format TypeScript and TSX files with Prettier. |
+| `npm run test` | Run unit tests with `vitest.config.unit.ts`; DB-free by design. |
+| `npm run test:watch` | Run unit tests in watch mode. |
+| `npm run test:coverage` | Run unit tests with V8 coverage. |
+| `npm run test:integration` | Run DB-backed integration tests with `vitest.config.integration.ts`. |
+| `npm run test:all` | Run unit tests and integration tests. Migrate the test DB first. |
 
-```bash
-npm run start
-```
+## Database Commands
 
-Start the production server after a build.
+| Command | Purpose |
+| --- | --- |
+| `npm run db:up` | Start the local PostgreSQL 17 development service. |
+| `npm run db:down` | Stop the local development database service. |
+| `npm run db:generate` | Generate the Prisma client into `generated/prisma`. |
+| `npm run db:migrate` | Apply local development migrations to `DATABASE_URL`. |
+| `npm run db:migrate:deploy` | Apply migrations in deployed environments. |
+| `npm run db:reset` | Reset the local development database through Prisma. |
+| `npm run db:verify-constraints` | Verify required extensions, generated range columns, partial indexes, exclusion constraints, and check constraints. |
+| `npm run db:seed` | Seed platform defaults and development/test-only organization membership data. |
+| `npm run db:smoke` | Run a minimal database connectivity check. |
+| `npm run test:db:up` | Start the local integration test PostgreSQL service. |
+| `npm run test:db:migrate` | Apply migrations to `DATABASE_URL_TEST`. |
+| `npm run test:db:down` | Stop the integration test database service. |
 
-```bash
-npm run lint
-```
+Development database defaults:
 
-Run ESLint.
+- Service: `postgres`
+- Database: `quickcourt`
+- URL: `postgresql://postgres:postgres@localhost:5432/quickcourt`
+
+Integration test database defaults:
+
+- Service: `postgres-test`
+- Database: `quickcourt_test`
+- URL: `postgresql://postgres:postgres@localhost:5433/quickcourt_test`
+
+`DATABASE_URL_TEST` must not point to the same database as `DATABASE_URL`.
+
+## Verification
+
+Fast local check:
 
 ```bash
 npm run typecheck
-```
-
-Run TypeScript type checking.
-
-```bash
-npm run format
-```
-
-Format TypeScript and TSX files with Prettier.
-
-```bash
+npm run lint
 npm run test
 ```
 
-Run the Slice 1 Vitest unit harness once. This command uses `vitest.config.unit.ts`, runs in the Node environment, and stays DB-free.
-
-```bash
-npm run test:watch
-```
-
-Run the Slice 1 Vitest unit harness in watch mode.
-
-```bash
-npm run test:coverage
-```
-
-Run the Slice 1 Vitest unit harness with V8 coverage.
+Database-backed check:
 
 ```bash
 npm run test:db:up
 npm run test:db:migrate
+DATABASE_URL=postgresql://postgres:postgres@localhost:5433/quickcourt_test npm run db:verify-constraints
 npm run test:integration
 ```
 
-Start the test PostgreSQL service, apply migrations to `DATABASE_URL_TEST`, then run DB-backed integration tests through `vitest.config.integration.ts`. `test:db:migrate` maps Prisma's active `DATABASE_URL` to `DATABASE_URL_TEST` only for that subprocess.
+Full pre-merge check for meaningful changes:
 
 ```bash
+npm run typecheck
+npm run lint
+npm run test
+npm run test:db:up
+npm run test:db:migrate
 DATABASE_URL=postgresql://postgres:postgres@localhost:5433/quickcourt_test npm run db:verify-constraints
+npm run test:integration
+npm run build
 ```
 
-Verify database constraints against the migrated test database.
-
-```bash
-npm run test:db:down
-```
-
-Stop the test PostgreSQL service.
-
-```bash
-npm run test:all
-```
-
-Run unit tests and DB integration tests. `npm run test` remains unit-only and DB-free.
-
-### Database Commands
-
-```bash
-npm run db:up
-```
-
-Start the local PostgreSQL 17 service defined in `docker-compose.yml`.
-
-```bash
-npm run db:generate
-```
-
-Generate the Prisma client into `generated/prisma`.
-
-```bash
-npm run db:migrate
-```
-
-Apply local development migrations to `DATABASE_URL`.
-
-```bash
-npm run db:verify-constraints
-```
-
-Verify required PostgreSQL extensions, generated range columns, partial indexes, exclusion constraints, and check constraints.
-
-```bash
-npm run db:seed
-```
-
-Seed platform defaults and development/test-only organization membership data.
-
-```bash
-npm run db:smoke
-```
-
-Run a minimal database connectivity check.
+In restricted sandboxes, request network permission before `npm run build` and before database-backed commands that connect to PostgreSQL through the local network stack.
 
 ## Environment
 
@@ -136,94 +125,46 @@ Copy `.env.example` to `.env` for local development. Real `.env` files are ignor
 
 Server-only env is validated in `config/env.ts`; Client Components must use `config/public-env.ts` and only `NEXT_PUBLIC_*` values. `APP_ENV` controls the deployment stage separately from `NODE_ENV`.
 
-Required Phase 1 env includes:
+Required server env:
 
 - `APP_ENV`
 - `APP_URL`
 - `LOG_LEVEL`
-- `NEXT_PUBLIC_APP_ENV`
-- `NEXT_PUBLIC_APP_URL`
 - `DATABASE_URL`
 - `BETTER_AUTH_SECRET`
 - `BETTER_AUTH_URL`
 - `EMAIL_PROVIDER`
-- `RESEND_API_KEY`
-- `EMAIL_FROM`
 
-Development and test may use `EMAIL_PROVIDER=console` without Resend credentials. Staging and production require `RESEND_API_KEY` and `EMAIL_FROM`.
-
-Local/test env:
+Optional or environment-dependent server env:
 
 - `DATABASE_URL_TEST`
 - `ADMIN_BOOTSTRAP_EMAIL`
+- `RESEND_API_KEY`
+- `EMAIL_FROM`
 
-## Database
+Client-safe env:
 
-Prisma v7 is configured through `prisma.config.ts` and uses the generated client in `generated/prisma`. Runtime access lives in `lib/db.ts`.
+- `NEXT_PUBLIC_APP_ENV`
+- `NEXT_PUBLIC_APP_URL`
 
-Local PostgreSQL defaults:
+Development and test may use `EMAIL_PROVIDER=console` without Resend credentials. Staging and production require `EMAIL_PROVIDER=resend`, `RESEND_API_KEY`, and `EMAIL_FROM`.
 
-- Docker service: `postgres`
-- Image: `postgres:17-alpine`
-- Database: `quickcourt`
-- User/password: `postgres` / `postgres`
-- Port: `5432`
+## Auth And Admin Bootstrap
 
-Local test PostgreSQL defaults:
-
-- Docker service: `postgres-test`
-- Image: `postgres:17-alpine`
-- Database: `quickcourt_test`
-- User/password: `postgres` / `postgres`
-- Port: `5433`
-- `DATABASE_URL_TEST`: `postgresql://postgres:postgres@localhost:5433/quickcourt_test`
-
-Local workflow:
-
-```bash
-npm run db:up
-npm run db:generate
-npm run db:migrate
-npm run db:verify-constraints
-npm run db:seed
-npm run db:smoke
-```
-
-`DATABASE_URL` is the active app and Prisma database URL. `DATABASE_URL_TEST` is the canonical DB integration test URL for the Phase 1 test harness and must not point at the same database as `DATABASE_URL`. P1-07 keeps unit tests DB-free; DB-backed tests use `*.integration.test.ts` and run through `npm run test:integration`. Prepare the test database with `npm run test:db:migrate` before running DB integration tests.
-
-P1-07 currently has the local Vitest, foundation env, and DB integration harness slices in place. The CI workflow slice is deferred, and P1-08 owns final behavior coverage for auth config, email sender selection, access helpers, route guards, and shell smoke paths.
-
-P1-03 seeds platform settings in all environments and sample organization/member data only in development or test. It does not seed Better Auth password credentials; create the first admin user through Better Auth, then promote that user to `role = "admin"` through an auth-aware bootstrap step.
+Better Auth owns user registration and password credentials. The seed script does not create Better Auth password credentials.
 
 Admin bootstrap:
 
-1. Create the user through Better Auth email/password registration.
-2. Set `ADMIN_BOOTSTRAP_EMAIL` to that user email.
+1. Create the user through the Better Auth email/password registration flow.
+2. Set `ADMIN_BOOTSTRAP_EMAIL` to that user's email.
 3. Run `npm run auth:bootstrap-admin`.
 
-The bootstrap command is idempotent and only promotes an existing Better Auth user to `User.role = "admin"`. It does not create users or credentials.
-
-Migration structure:
-
-- `20260428000100_init_extensions` creates `pgcrypto`, `citext`, and `btree_gist`.
-- `20260428000200_init_domain_schema` creates the full Prisma schema.
-- `20260428000300_add_database_constraints` is the source of truth for generated `time_range` columns and PostgreSQL-specific constraints.
-
-## Observability and Errors
-
-Server logs use Pino through `lib/logger.ts`. Sensitive fields are redacted by default, including secrets, auth tokens, cookies, reset/session tokens, contact details, IP/user agent, OTP/MFA values, and payment-sensitive identifiers. Keep sensitive values in structured log fields rather than message strings so redaction can apply.
-
-Baseline error handling lives in:
-
-- `app/error.tsx`
-- `app/global-error.tsx`
-- `app/not-found.tsx`
-- `app/(dashboard)/error.tsx`
-- `app/(admin)/error.tsx`
-- `lib/errors.ts`
-
-Error pages use generic copy and do not render stack traces, raw error messages, or internal details.
+The bootstrap command is idempotent and only promotes an existing Better Auth user to `User.role = "admin"`.
 
 ## Documentation
 
-Start with [docs/README.md](./docs/README.md). Phase 1 implementation tasks live in [docs/phase-1/README.md](./docs/phase-1/README.md).
+- [Maintainer Guide](./docs/maintainer-guide.md)
+- [Documentation Index](./docs/README.md)
+- [Testing Strategy](./docs/testing-strategy.md)
+- [Phase 1 Docs](./docs/phase-1/README.md)
+- [Phase 2 Docs](./docs/phase-2/README.md)
